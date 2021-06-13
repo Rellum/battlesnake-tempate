@@ -8,6 +8,7 @@ name: Deploy to Heroku
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: heroku-charmer
     env:
       HEROKU_APP_NAME: ""
       HEROKU_EMAIL: ""
@@ -26,3 +27,4 @@ jobs:
           heroku_app_name: ${{env.HEROKU_APP_NAME}}
           heroku_email: ${{env.HEROKU_EMAIL}}
           appdir: "heroku"
+          usedocker: true
