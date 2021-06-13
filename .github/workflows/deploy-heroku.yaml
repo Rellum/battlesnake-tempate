@@ -27,4 +27,3 @@ jobs:
           heroku_app_name: ${{env.HEROKU_APP_NAME}}
           heroku_email: ${{env.HEROKU_EMAIL}}
           appdir: "heroku"
-          usedocker: true
