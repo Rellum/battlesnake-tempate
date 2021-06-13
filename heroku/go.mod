@@ -1,4 +1,4 @@
-module vaughan-snake001
+module heroku
 
 go 1.16
 

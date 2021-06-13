@@ -385,6 +385,10 @@ func isValid(g grid, p rules.Point) bool {
 }
 
 func floodFill(g grid, p rules.Point, visited map[rules.Point]struct{}, limit int) int {
+	if true {
+		return limit
+	}
+
 	if limit == 0 {
 		return 0
 	}
