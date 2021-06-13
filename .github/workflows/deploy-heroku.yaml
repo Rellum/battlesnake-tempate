@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set up environment
-        uses: c-py/action-dotenv-to-setenv@v2
+        uses: c-py/action-dotenv-to-setenv@v3
         with:
           env-file: heroku/workflow.env
 
