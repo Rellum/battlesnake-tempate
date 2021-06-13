@@ -79,9 +79,13 @@ func TestMove(t *testing.T) {
 			requestFile: "case_9.json",
 			possible:    []string{"up"},
 		},
+		{
+			requestFile: "case_10.json",
+			possible:    []string{"left", "right"},
+		},
 	}
-	for i, tc := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
+	for _, tc := range tests {
+		t.Run(tc.requestFile, func(t *testing.T) {
 			file, err := os.Open(path.Join("testdata", tc.requestFile))
 			require.NoError(t, err)
 

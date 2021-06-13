@@ -123,14 +123,16 @@ func doMove(request GameRequest) (*moveResult, error) {
 		FoodSpawnChance: 15,
 		MinimumFood:     1,
 	}
+	depth := 2
 	if len(request.Board.Snakes) == 1 {
 		ruleset = &rules.SoloRuleset{rules.StandardRuleset{
 			FoodSpawnChance: 15,
 			MinimumFood:     1,
 		}}
+		depth = 2
 	}
 
-	bestDir, _, err := simulate(ruleset, &request.Board, request.You.ID, 4)
+	bestDir, _, err := simulate(ruleset, &request.Board, request.You.ID, depth)
 	if err != nil {
 		return nil, err
 	}
