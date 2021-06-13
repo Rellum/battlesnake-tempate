@@ -51,20 +51,16 @@ type MoveResponse struct {
 	Shout string `json:"shout,omitempty"`
 }
 
+//go:embed info.json
+
+var snakeInfo []byte
+
 // HandleIndex is called when your Battlesnake is created and refreshed
 // by play.battlesnake.com. BattlesnakeInfoResponse contains information about
 // your Battlesnake, including what it should look like on the game board.
 func HandleIndex(w http.ResponseWriter, r *http.Request) {
-	response := BattlesnakeInfoResponse{
-		APIVersion: "1",
-		Author:     "dogzbody",
-		Color:      "#5499C7",
-		Head:       "default",
-		Tail:       "default",
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(response)
+	_, err := w.Write(snakeInfo)
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
