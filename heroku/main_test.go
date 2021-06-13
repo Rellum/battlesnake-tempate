@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"math/rand"
 	"net/http"
@@ -73,6 +74,10 @@ func TestMove(t *testing.T) {
 		{
 			requestFile: "case_8.json",
 			possible:    []string{"right"},
+		},
+		{
+			requestFile: "case_9.json",
+			possible:    []string{"up"},
 		},
 	}
 	for i, tc := range tests {
@@ -220,15 +225,13 @@ func TestBruteForce(t *testing.T) {
 
 	mean, err := sample.Mean(results)
 	require.NoError(t, err)
-	assert.Equal(t, 1.0, mean)
+	assert.Greater(t, mean, 720.38)
 
 	sd, err := sample.StandardDeviation(results)
 	require.NoError(t, err)
-	assert.Equal(t, 1.0, sd)
+	assert.Less(t, sd, mean/2.0)
 
-	se, err := sample.StandardError(results)
-	require.NoError(t, err)
-	assert.Equal(t, 1.0, se)
+	fmt.Println(mean, sd)
 
 	goldie.New(t).Update(t, t.Name()+time.Now().Format("/2006-01-02-15-04-05"), []byte(pretty(makeGameRequest(worstScore, worstState))))
 }

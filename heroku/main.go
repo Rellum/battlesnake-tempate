@@ -119,12 +119,18 @@ func (mr *moveResult) getScore(dir string) int {
 }
 
 func doMove(request GameRequest) (*moveResult, error) {
-	ruleset := rules.SoloRuleset{rules.StandardRuleset{
+	var ruleset rules.Ruleset = &rules.StandardRuleset{
 		FoodSpawnChance: 15,
 		MinimumFood:     1,
-	}}
+	}
+	if len(request.Board.Snakes) == 1 {
+		ruleset = &rules.SoloRuleset{rules.StandardRuleset{
+			FoodSpawnChance: 15,
+			MinimumFood:     1,
+		}}
+	}
 
-	bestDir, _, err := simulate(&ruleset, &request.Board, request.You.ID, 4)
+	bestDir, _, err := simulate(ruleset, &request.Board, request.You.ID, 4)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +244,7 @@ func scoreMove(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 		ps = snake
 	}
 
-	if ps.Health < 30 {
+	if ps.Health < 2 {
 		return 1, nil
 	}
 
@@ -295,9 +301,9 @@ func pretty(req GameRequest) string {
 func nextPos(p rules.Point, dir string) rules.Point {
 	switch dir {
 	case "up":
-		return rules.Point{p.X, p.Y - 1}
-	case "down":
 		return rules.Point{p.X, p.Y + 1}
+	case "down":
+		return rules.Point{p.X, p.Y - 1}
 	case "left":
 		return rules.Point{p.X - 1, p.Y}
 	case "right":
