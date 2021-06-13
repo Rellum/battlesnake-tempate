@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - !master
+      - 'appengine/**'
 
 name: Deploy to Google App Engine
 

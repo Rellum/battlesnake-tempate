@@ -1,0 +1,24 @@
+on:
+  push:
+    branches:
+      - 'heroku/**'
+
+name: Deploy to Heroku
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up environment
+        uses: c-py/action-dotenv-to-setenv@v2
+          with:
+            env-file: heroku/workflow.env
+
+      - uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: ${{HEROKU_APP_NAME}}
+          heroku_email: ${{HEROKU_EMAIL}}
+          appdir: "heroku"
