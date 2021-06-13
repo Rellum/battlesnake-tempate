@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -367,7 +368,8 @@ func main() {
 	http.HandleFunc("/end", HandleEnd)
 
 	fmt.Printf("Starting Battlesnake Server at http://0.0.0.0:%s...\n", port)
-	log.Fatal().Err(http.ListenAndServe(":"+port, nil)).Msg("")
+	err := http.ListenAndServe(":"+port, nil)
+	log.Fatal().Err(err).Msg("crashed")
 }
 
 func isValid(g grid, p rules.Point) bool {
