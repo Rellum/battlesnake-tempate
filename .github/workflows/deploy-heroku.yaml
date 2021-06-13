@@ -20,9 +20,6 @@ jobs:
         with:
           env-file: heroku/workflow.env
 
-      - name: Echo env
-        run: echo "${{env.HEROKU_APP_NAME}} --- ${{env.HEROKU_EMAIL}}"
-
       - uses: akhileshns/heroku-deploy@v3.12.12
         with:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
