@@ -196,7 +196,7 @@ func TestBruteForce(t *testing.T) {
 	var worstScore int
 	var worstState rules.BoardState
 	for i := 0; i < 100; i++ {
-		state, err := ruleset.CreateInitialBoardState(11, 11, []string{"Hadyn"})
+		state, err := ruleset.CreateInitialBoardState(11, 11, []string{"Charmer"})
 		require.NoError(t, err)
 
 		var turn int

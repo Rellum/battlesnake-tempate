@@ -295,9 +295,9 @@ func pretty(req GameRequest) string {
 func nextPos(p rules.Point, dir string) rules.Point {
 	switch dir {
 	case "up":
-		return rules.Point{p.X, p.Y + 1}
-	case "down":
 		return rules.Point{p.X, p.Y - 1}
+	case "down":
+		return rules.Point{p.X, p.Y + 1}
 	case "left":
 		return rules.Point{p.X - 1, p.Y}
 	case "right":
