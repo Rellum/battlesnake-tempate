@@ -8,6 +8,10 @@ name: Deploy to Heroku
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HEROKU_APP_NAME: ""
+      HEROKU_EMAIL: ""
+
     steps:
       - uses: actions/checkout@v2
 
@@ -15,6 +19,9 @@ jobs:
         uses: c-py/action-dotenv-to-setenv@v2
         with:
           env-file: heroku/workflow.env
+
+      - name: Echo env
+        run: echo "${{HEROKU_APP_NAME}} --- ${{HEROKU_EMAIL}}"
 
       - uses: akhileshns/heroku-deploy@v3.12.12
         with:
