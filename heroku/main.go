@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,16 +14,21 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:embed info.json
-
-var snakeInfo []byte
+var snakeInfo = `{
+  "apiversion": "1",
+  "author": "dogzbody",
+  "color" : "#5499C7",
+  "head" : "default",
+  "tail" : "default",
+  "version" : "0.0.1-beta"
+}`
 
 // HandleIndex is called when your Battlesnake is created and refreshed
 // by play.battlesnake.com. BattlesnakeInfoResponse contains information about
 // your Battlesnake, including what it should look like on the game board.
 func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(snakeInfo)
+	_, err := w.Write([]byte(snakeInfo))
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
