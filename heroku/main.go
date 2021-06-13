@@ -274,7 +274,7 @@ func scoreMove(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 		ps = snake
 	}
 
-	if ps.Health < 40 {
+	if ps.Health < 30 {
 		return 1, nil
 	}
 
