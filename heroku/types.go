@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/BattlesnakeOfficial/rules"
+	"github.com/BattlesnakeOfficial/rules/cli/commands"
 )
 
 type grid map[rules.Point]rune
@@ -30,10 +31,10 @@ type BattlesnakeInfoResponse struct {
 }
 
 type GameRequest struct {
-	Game  Game             `json:"game"`
-	Turn  int              `json:"turn"`
-	Board rules.BoardState `json:"board"`
-	You   Battlesnake      `json:"you"`
+	Game  Game                   `json:"game"`
+	Turn  int32                  `json:"turn"`
+	Board commands.BoardResponse `json:"board"`
+	You   Battlesnake            `json:"you"`
 }
 
 type MoveResponse struct {

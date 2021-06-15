@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/BattlesnakeOfficial/rules"
+	"github.com/BattlesnakeOfficial/rules/cli/commands"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -63,8 +66,6 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
-
-	log.Debug().Msg(pretty(request))
 
 	mr, err := doMove(request)
 	if err != nil {
@@ -131,18 +132,37 @@ func doMove(request GameRequest) (*moveResult, error) {
 		}}
 		depth = 2
 	}
+	if len(request.Board.Hazards) > 0 {
+		ruleset = &rules.RoyaleRuleset{
+			StandardRuleset: rules.StandardRuleset{
+				FoodSpawnChance: 15,
+				MinimumFood:     1,
+			},
+			Seed:              time.Now().UTC().UnixNano(),
+			Turn:              request.Turn,
+			ShrinkEveryNTurns: 10,
+			DamagePerTurn:     1,
+		}
+	}
 
-	bestDir, _, err := simulate(ruleset, &request.Board, request.You.ID, depth)
+	bestDir, _, err := simulate(ruleset, &rules.BoardState{
+		Height: request.Board.Height,
+		Width:  request.Board.Width,
+		Food:   pointFromCoordSlice(request.Board.Food),
+		Snakes: buildSnakes(request.Board.Snakes),
+	}, request.You.ID, depth)
 	if err != nil {
 		return nil, err
 	}
 
 	if bestDir == "" {
-		grid := makeAnonymousGrid(request.Board)
+		g := makeAnonymousGridFromResponse(request.Board)
+		var best int
 		for _, dir := range []string{"up", "down", "left", "right"} {
-			if isValid(grid, nextPos(request.You.Head, dir)) {
+			area := floodFill(g, nextPos(request.You.Body[0], dir), nil, len(request.You.Body))
+			if area > best {
+				best = area
 				bestDir = dir
-				break
 			}
 		}
 	}
@@ -177,7 +197,7 @@ func simulate(rs rules.Ruleset, state *rules.BoardState, me string, depth int) (
 		}{len: len(snake.Body), head: snake.Body[0]}
 	}
 	var mu sync.Mutex
-	var max int
+	max := math.MinInt64
 	var best string
 	var eg errgroup.Group
 	for _, ml := range allMoves(state.Snakes, nil) {
@@ -194,7 +214,7 @@ func simulate(rs rules.Ruleset, state *rules.BoardState, me string, depth int) (
 				log.Fatal().Err(err).Stack().Msg("")
 			}
 
-			score, err := scoreMove(rs, state, newState, me)
+			score, err := scoreTurn(rs, state, newState, me)
 			if err != nil {
 				return err
 			}
@@ -229,14 +249,66 @@ func simulate(rs rules.Ruleset, state *rules.BoardState, me string, depth int) (
 	return best, max, nil
 }
 
-func scoreMove(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error) {
-	over, err := rs.IsGameOver(t)
-	if err != nil {
-		return 0, err
+func coordFromPoint(pt rules.Point) commands.Coord {
+	return commands.Coord{X: pt.X, Y: pt.Y}
+}
+
+func coordFromPointSlice(ptArray []rules.Point) []commands.Coord {
+	a := make([]commands.Coord, 0)
+	for _, pt := range ptArray {
+		a = append(a, coordFromPoint(pt))
 	}
-	if over {
-		return 0, nil
+	return a
+}
+
+func pointFromCoord(pt commands.Coord) rules.Point {
+	return rules.Point{X: pt.X, Y: pt.Y}
+}
+
+func pointFromCoordSlice(ptArray []commands.Coord) []rules.Point {
+	a := make([]rules.Point, 0)
+	for _, pt := range ptArray {
+		a = append(a, pointFromCoord(pt))
 	}
+	return a
+}
+
+func snakeFromSnakeResponse(snake commands.SnakeResponse) rules.Snake {
+	return rules.Snake{
+		ID:     snake.Id,
+		Health: snake.Health,
+		Body:   pointFromCoordSlice(snake.Body),
+	}
+}
+
+func buildSnakes(snakes []commands.SnakeResponse) []rules.Snake {
+	var a []rules.Snake
+	for _, snake := range snakes {
+		a = append(a, snakeFromSnakeResponse(snake))
+	}
+	return a
+}
+
+func snakeResponseFromSnake(snake rules.Snake) commands.SnakeResponse {
+	return commands.SnakeResponse{
+		Id:     snake.ID,
+		Health: snake.Health,
+		Body:   coordFromPointSlice(snake.Body),
+		Head:   coordFromPoint(snake.Body[0]),
+		Length: int32(len(snake.Body)),
+	}
+}
+
+func buildSnakesResponse(snakes []rules.Snake) []commands.SnakeResponse {
+	var a []commands.SnakeResponse
+	for _, snake := range snakes {
+		a = append(a, snakeResponseFromSnake(snake))
+	}
+	return a
+}
+
+func scoreTurn(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error) {
+	var res int
 
 	var ps rules.Snake
 	for _, snake := range p.Snakes {
@@ -244,10 +316,6 @@ func scoreMove(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 			continue
 		}
 		ps = snake
-	}
-
-	if ps.Health < 2 {
-		return 1, nil
 	}
 
 	var ts rules.Snake
@@ -258,12 +326,61 @@ func scoreMove(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 		ts = snake
 	}
 
-	if len(ps.Body) < len(ts.Body) {
-		return 1, nil
+	if ts.EliminatedCause != rules.NotEliminated {
+		return lostGame, nil
 	}
 
-	return 2, nil
+	var pStrikeDist float64
+	for _, snake := range p.Snakes {
+		if len(snake.Body) < len(ps.Body) {
+			pStrikeDist += math.Abs(float64(snake.Body[0].X - ps.Body[0].X))
+			pStrikeDist += math.Abs(float64(snake.Body[0].Y - ps.Body[0].Y))
+		} else {
+			pStrikeDist -= math.Abs(float64(snake.Body[0].X - ps.Body[0].X))
+			pStrikeDist -= math.Abs(float64(snake.Body[0].Y - ps.Body[0].Y))
+		}
+	}
+
+	var tStrikeDist float64
+	for _, snake := range t.Snakes {
+		if len(snake.Body) < len(ts.Body) {
+			tStrikeDist += math.Abs(float64(snake.Body[0].X - ts.Body[0].X))
+			tStrikeDist += math.Abs(float64(snake.Body[0].Y - ts.Body[0].Y))
+		} else {
+			tStrikeDist -= math.Abs(float64(snake.Body[0].X - ts.Body[0].X))
+			tStrikeDist -= math.Abs(float64(snake.Body[0].Y - ts.Body[0].Y))
+		}
+	}
+
+	if math.Abs(float64(ts.Body[0].X-ts.Body[len(ts.Body)-1].X))+math.Abs(float64(ts.Body[0].Y-ts.Body[len(ts.Body)-1].Y)) == 1.0 {
+		res += chasingTail
+	}
+
+	if tStrikeDist <= pStrikeDist {
+		res += betterStrikeDist
+	} else {
+		res += worseStrikeDist
+	}
+
+	if ps.Health >= 2 && len(ps.Body) < len(ts.Body) {
+		if ps.Health <= 2 {
+			res += eatWhenHungry
+		} else {
+			res += eatWhenHealthy
+		}
+	}
+
+	return res, nil
 }
+
+const (
+	eatWhenHealthy   = -1
+	eatWhenHungry    = 100
+	lostGame         = -1000
+	worseStrikeDist  = -3
+	betterStrikeDist = 3
+	chasingTail      = 5
+)
 
 func allMoves(snakes []rules.Snake, moves [][]rules.SnakeMove) [][]rules.SnakeMove {
 	if len(snakes) == 0 {
@@ -315,7 +432,7 @@ func nextPos(p rules.Point, dir string) rules.Point {
 }
 
 func makeGrid(req GameRequest) grid {
-	grid := makeAnonymousGrid(req.Board)
+	grid := makeAnonymousGridFromResponse(req.Board)
 
 	for i, coord := range req.You.Body {
 		if i == 0 {
@@ -347,6 +464,31 @@ func makeAnonymousGrid(state rules.BoardState) grid {
 				continue
 			}
 			grid[coord] = 's'
+		}
+	}
+
+	return grid
+}
+
+func makeAnonymousGridFromResponse(state commands.BoardResponse) grid {
+	grid := make(map[rules.Point]rune)
+	for x := int32(0); x < state.Width; x++ {
+		for y := int32(0); y < state.Height; y++ {
+			grid[rules.Point{x, y}] = ' '
+		}
+	}
+
+	for _, coord := range state.Food {
+		grid[pointFromCoord(coord)] = 'f'
+	}
+
+	for _, snake := range state.Snakes {
+		for i, coord := range snake.Body {
+			if i == 0 {
+				grid[pointFromCoord(coord)] = 'S'
+				continue
+			}
+			grid[pointFromCoord(coord)] = 's'
 		}
 	}
 
@@ -385,7 +527,12 @@ func main() {
 }
 
 func isValid(g grid, p rules.Point) bool {
-	if g[p] != ' ' && g[p] != 'f' {
+	v, ok := g[p]
+	if !ok {
+		return false
+	}
+
+	if v != ' ' && v != 'f' {
 		return false
 	}
 
@@ -393,14 +540,6 @@ func isValid(g grid, p rules.Point) bool {
 }
 
 func floodFill(g grid, p rules.Point, visited map[rules.Point]struct{}, limit int) int {
-	if true {
-		return limit
-	}
-
-	if limit == 0 {
-		return 0
-	}
-
 	if visited == nil {
 		visited = make(map[rules.Point]struct{})
 	}
@@ -411,6 +550,10 @@ func floodFill(g grid, p rules.Point, visited map[rules.Point]struct{}, limit in
 	visited[p] = struct{}{}
 
 	if !isValid(g, p) {
+		return 0
+	}
+
+	if limit == 0 {
 		return 0
 	}
 
