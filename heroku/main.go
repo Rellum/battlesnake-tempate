@@ -372,7 +372,7 @@ func scoreTurn(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 	}
 
 	if len(ps.Body) < len(ts.Body) {
-		if len(ts.Body) < longest || ps.Health <= 3 {
+		if len(ts.Body) < longest || ps.Health <= 15 {
 			res += eatWhenHungry
 		} else {
 			res += eatWhenHealthy
