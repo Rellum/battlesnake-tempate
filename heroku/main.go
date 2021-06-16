@@ -124,13 +124,13 @@ func doMove(request GameRequest) (*moveResult, error) {
 		FoodSpawnChance: 15,
 		MinimumFood:     1,
 	}
-	depth := 2
+	depth := 3
 	if len(request.Board.Snakes) == 1 {
 		ruleset = &rules.SoloRuleset{rules.StandardRuleset{
 			FoodSpawnChance: 15,
 			MinimumFood:     1,
 		}}
-		depth = 2
+		depth = 4
 	}
 	if len(request.Board.Hazards) > 0 {
 		ruleset = &rules.RoyaleRuleset{
@@ -352,7 +352,9 @@ func scoreTurn(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 		}
 	}
 
-	if math.Abs(float64(ts.Body[0].X-ts.Body[len(ts.Body)-1].X))+math.Abs(float64(ts.Body[0].Y-ts.Body[len(ts.Body)-1].Y)) == 1.0 {
+	pTailDist := math.Abs(float64(ps.Body[0].X-ps.Body[len(ps.Body)-1].X)) + math.Abs(float64(ps.Body[0].Y-ps.Body[len(ps.Body)-1].Y))
+	tTailDist := math.Abs(float64(ts.Body[0].X-ts.Body[len(ts.Body)-1].X)) + math.Abs(float64(ts.Body[0].Y-ts.Body[len(ts.Body)-1].Y))
+	if tTailDist <= pTailDist {
 		res += chasingTail
 	}
 

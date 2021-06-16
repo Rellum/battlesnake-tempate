@@ -7,6 +7,11 @@ import (
 
 type grid map[rules.Point]rune
 
+//type grid map[rules.Point]struct {
+//	content rune
+//	ttl     int
+//}
+
 type Game struct {
 	ID      string `json:"id"`
 	Timeout int32  `json:"timeout"`
@@ -20,14 +25,6 @@ type Battlesnake struct {
 	Head   rules.Point   `json:"head"`
 	Length int32         `json:"length"`
 	Shout  string        `json:"shout"`
-}
-
-type BattlesnakeInfoResponse struct {
-	APIVersion string `json:"apiversion"`
-	Author     string `json:"author"`
-	Color      string `json:"color"`
-	Head       string `json:"head"`
-	Tail       string `json:"tail"`
 }
 
 type GameRequest struct {
