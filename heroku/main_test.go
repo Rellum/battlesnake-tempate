@@ -38,6 +38,22 @@ func TestPretty(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTTL(t *testing.T) {
+	g := goldie.New(t)
+	err := filepath.Walk("testdata", func(p string, info fs.FileInfo, err error) error {
+		if filepath.Ext(info.Name()) != ".json" {
+			return nil
+		}
+		t.Run(info.Name(), func(t *testing.T) {
+			request := parseGameRequest(t, p)
+
+			g.Update(t, strings.TrimSuffix(info.Name(), ".json")+"_ttl", []byte(prettyTTL(request)))
+		})
+		return nil
+	})
+	require.NoError(t, err)
+}
+
 func TestMove(t *testing.T) {
 	tests := []struct {
 		requestFile string
@@ -252,7 +268,7 @@ func TestFloodFill(t *testing.T) {
 			grid := makeGrid(request)
 
 			visited := make(map[rules.Point]struct{})
-			actual := floodFill(grid, tc.start, visited, tc.limit)
+			actual := floodFill(grid, tc.start, visited, tc.limit, 0)
 
 			var visual string
 			for y := request.Board.Height - 1; y >= 0; y-- {

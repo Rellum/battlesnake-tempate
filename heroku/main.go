@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -124,13 +125,13 @@ func doMove(request GameRequest) (*moveResult, error) {
 		FoodSpawnChance: 15,
 		MinimumFood:     1,
 	}
-	depth := 3
+	depth := 2
 	if len(request.Board.Snakes) == 1 {
 		ruleset = &rules.SoloRuleset{rules.StandardRuleset{
 			FoodSpawnChance: 15,
 			MinimumFood:     1,
 		}}
-		depth = 4
+		depth = 3
 	}
 	if len(request.Board.Hazards) > 0 {
 		ruleset = &rules.RoyaleRuleset{
@@ -159,7 +160,7 @@ func doMove(request GameRequest) (*moveResult, error) {
 		g := makeAnonymousGridFromResponse(request.Board)
 		var best int
 		for _, dir := range []string{"up", "down", "left", "right"} {
-			area := floodFill(g, nextPos(request.You.Body[0], dir), nil, len(request.You.Body))
+			area := floodFill(g, nextPos(request.You.Body[0], dir), nil, len(request.You.Body), 0)
 			if area > best {
 				best = area
 				bestDir = dir
@@ -199,12 +200,13 @@ func simulate(rs rules.Ruleset, state *rules.BoardState, me string, depth int) (
 	var mu sync.Mutex
 	max := math.MinInt64
 	var best string
+	var count int //debugging
 	var eg errgroup.Group
 	for _, ml := range allMoves(state.Snakes, nil) {
 		ml := ml
 		eg.Go(func() error {
 			for _, move := range ml {
-				if floodFill(grid, nextPos(snakes[move.ID].head, move.Move), nil, snakes[move.ID].len) < snakes[move.ID].len {
+				if floodFill(grid, nextPos(snakes[move.ID].head, move.Move), nil, snakes[move.ID].len, 0) < snakes[move.ID].len {
 					return nil
 				}
 			}
@@ -235,6 +237,7 @@ func simulate(rs rules.Ruleset, state *rules.BoardState, me string, depth int) (
 
 			mu.Lock()
 			defer mu.Unlock()
+			count++
 			if max < i {
 				best = dir
 				max = i
@@ -416,7 +419,25 @@ func pretty(req GameRequest) string {
 	for y := req.Board.Height - 1; y >= 0; y-- {
 		res += "|"
 		for x := int32(0); x < req.Board.Width; x++ {
-			res += string(grid[rules.Point{x, y}])
+			res += string(grid[rules.Point{x, y}].content)
+		}
+		res += "|\n"
+	}
+	return res
+}
+
+func prettyTTL(req GameRequest) string {
+	grid := makeGrid(req)
+
+	var res string
+	for y := req.Board.Height - 1; y >= 0; y-- {
+		res += "|"
+		for x := int32(0); x < req.Board.Width; x++ {
+			if grid[rules.Point{x, y}].ttl == 0 {
+				res += " "
+				continue
+			}
+			res += strconv.Itoa(grid[rules.Point{x, y}].ttl)
 		}
 		res += "|\n"
 	}
@@ -442,34 +463,34 @@ func makeGrid(req GameRequest) grid {
 
 	for i, coord := range req.You.Body {
 		if i == 0 {
-			grid[coord] = 'Y'
+			grid[coord] = cell{content: 'Y', ttl: len(req.You.Body) - i}
 			continue
 		}
-		grid[coord] = 'y'
+		grid[coord] = cell{content: 'y', ttl: len(req.You.Body) - i}
 	}
 
 	return grid
 }
 
 func makeAnonymousGrid(state rules.BoardState) grid {
-	grid := make(map[rules.Point]rune)
+	grid := make(grid)
 	for x := int32(0); x < state.Width; x++ {
 		for y := int32(0); y < state.Height; y++ {
-			grid[rules.Point{x, y}] = ' '
+			grid[rules.Point{x, y}] = cell{content: ' '}
 		}
 	}
 
 	for _, coord := range state.Food {
-		grid[coord] = 'f'
+		grid[coord] = cell{content: 'f'}
 	}
 
 	for _, snake := range state.Snakes {
 		for i, coord := range snake.Body {
 			if i == 0 {
-				grid[coord] = 'S'
+				grid[coord] = cell{content: 'S', ttl: len(snake.Body) - i}
 				continue
 			}
-			grid[coord] = 's'
+			grid[coord] = cell{content: 's', ttl: len(snake.Body) - i}
 		}
 	}
 
@@ -477,24 +498,24 @@ func makeAnonymousGrid(state rules.BoardState) grid {
 }
 
 func makeAnonymousGridFromResponse(state commands.BoardResponse) grid {
-	grid := make(map[rules.Point]rune)
+	grid := make(grid)
 	for x := int32(0); x < state.Width; x++ {
 		for y := int32(0); y < state.Height; y++ {
-			grid[rules.Point{x, y}] = ' '
+			grid[rules.Point{x, y}] = cell{content: ' '}
 		}
 	}
 
 	for _, coord := range state.Food {
-		grid[pointFromCoord(coord)] = 'f'
+		grid[pointFromCoord(coord)] = cell{content: 'f'}
 	}
 
 	for _, snake := range state.Snakes {
 		for i, coord := range snake.Body {
 			if i == 0 {
-				grid[pointFromCoord(coord)] = 'S'
+				grid[pointFromCoord(coord)] = cell{content: 'S', ttl: len(snake.Body) - i}
 				continue
 			}
-			grid[pointFromCoord(coord)] = 's'
+			grid[pointFromCoord(coord)] = cell{content: 's', ttl: len(snake.Body) - i}
 		}
 	}
 
@@ -538,14 +559,14 @@ func isValid(g grid, p rules.Point) bool {
 		return false
 	}
 
-	if v != ' ' && v != 'f' {
+	if v.content != ' ' && v.content != 'f' {
 		return false
 	}
 
 	return true
 }
 
-func floodFill(g grid, p rules.Point, visited map[rules.Point]struct{}, limit int) int {
+func floodFill(g grid, p rules.Point, visited map[rules.Point]struct{}, limit, found int) int {
 	if visited == nil {
 		visited = make(map[rules.Point]struct{})
 	}
@@ -555,19 +576,23 @@ func floodFill(g grid, p rules.Point, visited map[rules.Point]struct{}, limit in
 	}
 	visited[p] = struct{}{}
 
+	if limit-found <= 0 {
+		return 0
+	}
+
 	if !isValid(g, p) {
+		if g[p].ttl < limit {
+			// We can follow tails indefinitely
+			return limit - found
+		}
 		return 0
 	}
 
-	if limit == 0 {
-		return 0
-	}
-
-	sum := 1
-	sum = sum + floodFill(g, rules.Point{p.X, p.Y - 1}, visited, limit-sum)
-	sum = sum + floodFill(g, rules.Point{p.X, p.Y + 1}, visited, limit-sum)
-	sum = sum + floodFill(g, rules.Point{p.X - 1, p.Y}, visited, limit-sum)
-	sum = sum + floodFill(g, rules.Point{p.X + 1, p.Y}, visited, limit-sum)
+	sum := found + 1
+	sum = sum + floodFill(g, rules.Point{p.X, p.Y - 1}, visited, limit, sum)
+	sum = sum + floodFill(g, rules.Point{p.X, p.Y + 1}, visited, limit, sum)
+	sum = sum + floodFill(g, rules.Point{p.X - 1, p.Y}, visited, limit, sum)
+	sum = sum + floodFill(g, rules.Point{p.X + 1, p.Y}, visited, limit, sum)
 
 	return sum
 }
