@@ -318,8 +318,12 @@ func scoreTurn(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 		ps = snake
 	}
 
+	var longest int
 	var ts rules.Snake
 	for _, snake := range t.Snakes {
+		if len(snake.Body) > longest {
+			longest = len(snake.Body)
+		}
 		if snake.ID != me {
 			continue
 		}
@@ -364,8 +368,8 @@ func scoreTurn(rs rules.Ruleset, p, t *rules.BoardState, me string) (int, error)
 		res += worseStrikeDist
 	}
 
-	if ps.Health >= 2 && len(ps.Body) < len(ts.Body) {
-		if ps.Health <= 2 {
+	if len(ps.Body) < len(ts.Body) {
+		if len(ts.Body) < longest || ps.Health <= 3 {
 			res += eatWhenHungry
 		} else {
 			res += eatWhenHealthy
@@ -381,7 +385,7 @@ const (
 	lostGame         = -1000
 	worseStrikeDist  = -3
 	betterStrikeDist = 3
-	chasingTail      = 5
+	chasingTail      = 50
 )
 
 func allMoves(snakes []rules.Snake, moves [][]rules.SnakeMove) [][]rules.SnakeMove {
