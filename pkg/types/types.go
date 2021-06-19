@@ -48,10 +48,20 @@ type GameRequest struct {
 }
 
 type SnakeMove struct {
-	ID    string `json:"id"`
-	Move  string `json:"move"`
-	Shout string `json:"shout,omitempty"`
+	ID    string  `json:"id"`
+	Move  MoveDir `json:"move"`
+	Shout string  `json:"shout,omitempty"`
 }
+
+type MoveDir string
+
+const (
+	MoveDirUnknown MoveDir = ""
+	MoveDirUp      MoveDir = "up"
+	MoveDirDown    MoveDir = "down"
+	MoveDirLeft    MoveDir = "left"
+	MoveDirRight   MoveDir = "right"
+)
 
 func Distance(t, f Point) float64 {
 	dX := t.X - f.X

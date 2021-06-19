@@ -1,0 +1,64 @@
+{
+  "game": {
+    "id": "f77d90fc-5644-462b-a962-372df1205984"
+  },
+  "turn": 5,
+  "board": {
+    "width": 11,
+    "height": 11,
+    "snakes": [
+      {
+        "id": "gs_4R7gbhhj39GHRmpVHTQpS99G",
+        "name": "Hadyn",
+        "body": [
+          {
+            "x": 1,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 8
+          }
+        ],
+        "health": 95
+      }
+    ],
+    "food": [
+      {
+        "x": 0,
+        "y": 4
+      },
+      {
+        "x": 5,
+        "y": 5
+      },
+      {
+        "x": 2,
+        "y": 3
+      }
+    ]
+  },
+  "you": {
+    "id": "gs_4R7gbhhj39GHRmpVHTQpS99G",
+    "name": "Hadyn",
+    "body": [
+      {
+        "x": 1,
+        "y": 10
+      },
+      {
+        "x": 1,
+        "y": 9
+      },
+      {
+        "x": 1,
+        "y": 8
+      }
+    ],
+    "health": 95
+  }
+}
