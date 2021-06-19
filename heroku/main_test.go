@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -99,6 +100,10 @@ func TestMove(t *testing.T) {
 			requestFile: "case_10.json",
 			possible:    []string{"left", "right"},
 		},
+		{
+			requestFile: "case_11.json",
+			possible:    []string{"down"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.requestFile, func(t *testing.T) {
@@ -119,49 +124,97 @@ func TestMove(t *testing.T) {
 }
 
 func TestDoMove(t *testing.T) {
+	assertPos := func(i int, dir string) func(*testing.T, []scoredMove) {
+		return func(t *testing.T, r []scoredMove) {
+			require.Equal(t, dir, r[i-1].dir)
+		}
+	}
+
 	tests := []struct {
 		requestFile string
-		expected    moveResult
+		assertions  []func(*testing.T, []scoredMove)
 	}{
 		{
 			requestFile: "case_1.json",
-			expected:    moveResult{u: 1, d: 0, l: 0, r: 0},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(1, "up"),
+			},
 		},
 		{
 			requestFile: "case_2.json",
-			expected:    moveResult{u: 0, d: 0, l: 1, r: 1},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(3, "up"),
+				assertPos(4, "down"),
+			},
 		},
 		{
 			requestFile: "case_3.json",
-			//possible:    []string{"up", "right"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(3, "left"),
+				assertPos(4, "down"),
+			},
 		},
 		{
 			requestFile: "case_4.json",
-			//possible:    []string{"down"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(1, "down"),
+				assertPos(4, "right"),
+			},
 		},
 		{
 			requestFile: "case_5.json",
-			//possible:    []string{"left", "right"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(3, "up"),
+				assertPos(4, "down"),
+			},
 		},
 		{
 			requestFile: "case_6.json",
-			//possible:    []string{"left", "right"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(3, "up"),
+				assertPos(4, "down"),
+			},
 		},
 		{
 			requestFile: "case_7.json",
-			//possible:    []string{"left", "right"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(3, "up"),
+				assertPos(4, "down"),
+			},
 		},
 		{
 			requestFile: "case_8.json",
-			//possible:    []string{"right"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(1, "right"),
+				assertPos(2, "left"),
+				assertPos(3, "down"),
+				assertPos(4, "up"),
+			},
 		},
 		{
 			requestFile: "case_9.json",
-			//possible:    []string{"up"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(1, "up"),
+				assertPos(2, "down"),
+				assertPos(3, "left"),
+				assertPos(4, "right"),
+			},
 		},
 		{
 			requestFile: "case_10.json",
-			//possible:    []string{"left", "right"},
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(3, "up"),
+				assertPos(4, "down"),
+			},
+		},
+		{
+			requestFile: "case_11.json",
+			assertions: []func(*testing.T, []scoredMove){
+				assertPos(1, "down"),
+				assertPos(2, "left"),
+				assertPos(3, "up"),
+				assertPos(4, "right"),
+			},
 		},
 	}
 	for _, tc := range tests {
@@ -175,9 +228,27 @@ func TestDoMove(t *testing.T) {
 
 			actual, err := doMove(request)
 			require.NoError(t, err)
-			require.Equal(t, tc.expected, *actual)
+
+			result := []scoredMove{
+				{dir: "up", score: actual.u},
+				{dir: "down", score: actual.d},
+				{dir: "left", score: actual.l},
+				{dir: "right", score: actual.r},
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i].score > result[j].score
+			})
+
+			for _, assertion := range tc.assertions {
+				assertion(t, result)
+			}
 		})
 	}
+}
+
+type scoredMove struct {
+	dir   string
+	score int
 }
 
 func TestAllMoves(t *testing.T) {
@@ -300,7 +371,7 @@ func parseGameRequest(t *testing.T, filename string) GameRequest {
 	return request
 }
 
-func TestBruteForce(t *testing.T) {
+func BenchmarkBruteForce(b *testing.B) {
 	rand.Seed(time.Now().UnixNano())
 	ruleset := &rules.SoloRuleset{
 		StandardRuleset: rules.StandardRuleset{
@@ -310,42 +381,38 @@ func TestBruteForce(t *testing.T) {
 	}
 
 	results := make([]float64, 0, 1000)
-	var worstScore int32
-	var worstState rules.BoardState
-	for i := 0; i < 100; i++ {
+	for i := 0; i < b.N; i++ {
 		state, err := ruleset.CreateInitialBoardState(11, 11, []string{"Charmer"})
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		var turn int32
 		for v := false; !v; v, _ = ruleset.IsGameOver(state) {
 			turn++
 
 			mr, err := doMove(makeGameRequest(turn, *state))
-			require.NoError(t, err)
+			require.NoError(b, err)
 
 			state, err = ruleset.CreateNextBoardState(state, []rules.SnakeMove{{state.Snakes[0].ID, mr.best()}})
-			require.NoError(t, err)
+			require.NoError(b, err)
 		}
 		results = append(results, float64(turn))
-
-		if worstScore == 0 || turn < worstScore {
-			worstState = *state
-		}
 	}
 
-	assert.Len(t, results, 100)
+	assert.Len(b, results, b.N)
+
+	if b.N == 1 {
+		return
+	}
 
 	mean, err := sample.Mean(results)
-	require.NoError(t, err)
-	assert.Greater(t, mean, 720.38)
+	require.NoError(b, err)
+	//assert.Greater(b, mean, 1080.33)
 
 	sd, err := sample.StandardDeviation(results)
-	require.NoError(t, err)
-	assert.Less(t, sd, mean/2.0)
+	require.NoError(b, err)
+	assert.Less(b, sd, mean/3.0)
 
-	fmt.Println(mean, sd)
-
-	goldie.New(t).Update(t, t.Name()+time.Now().Format("/2006-01-02-15-04-05"), []byte(pretty(makeGameRequest(worstScore, worstState))))
+	b.Log(b.N, mean, sd)
 }
 
 func makeGameRequest(turn int32, state rules.BoardState) GameRequest {

@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/BattlesnakeOfficial/rules v1.0.17
 	github.com/alcortesm/sample v1.0.4
+	github.com/beefsack/go-astar v0.0.0-20200827232313-4ecf9e304482
 	github.com/rs/zerolog v1.23.0
 	github.com/sebdah/goldie/v2 v2.5.3
 	github.com/stretchr/testify v1.7.0

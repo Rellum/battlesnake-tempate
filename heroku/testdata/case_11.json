@@ -1,0 +1,83 @@
+{
+  "game": {
+    "id": "beea4077-deca-40cc-b3c9-dd2aa120bd43"
+  },
+  "turn": 7,
+  "board": {
+    "width": 11,
+    "height": 11,
+    "snakes": [
+      {
+        "id": "gs_DKpVhwKwXDdDpKd3HxyFxVKF",
+        "name": "Sssssssimple",
+        "body": [
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          }
+        ],
+        "health": 93
+      },
+      {
+        "id": "gs_DWVXHyYCJHdSYPpJBHbMJKDd",
+        "name": "Charmer",
+        "body": [
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 9
+          }
+        ],
+        "health": 93
+      }
+    ],
+    "food": [
+      {
+        "x": 4,
+        "y": 8
+      },
+      {
+        "x": 8,
+        "y": 8
+      },
+      {
+        "x": 5,
+        "y": 5
+      }
+    ]
+  },
+  "you": {
+    "id": "gs_DWVXHyYCJHdSYPpJBHbMJKDd",
+    "name": "Charmer",
+    "body": [
+      {
+        "x": 9,
+        "y": 10
+      },
+      {
+        "x": 10,
+        "y": 10
+      },
+      {
+        "x": 10,
+        "y": 9
+      }
+    ],
+    "health": 93
+  }
+}
