@@ -542,7 +542,7 @@ func main() {
 	http.HandleFunc("/move", HandleMove)
 	http.HandleFunc("/end", HandleEnd)
 
-	http.HandleFunc("/striker", striker.HandleIndex)
+	http.HandleFunc("/striker/", striker.HandleIndex)
 	http.HandleFunc("/striker/start", striker.HandleStart)
 	http.HandleFunc("/striker/move", striker.HandleMove)
 	http.HandleFunc("/striker/end", striker.HandleEnd)

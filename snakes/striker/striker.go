@@ -61,6 +61,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 
 	var response types.SnakeMove
 	if len(snakes) > 1 && snakes[0].Name == request.You.Name {
+		fmt.Println("hunting")
 		dir, _, ok := grid.FindPath(graph, request.You.Body[0], snakes[1].Head)
 		if ok {
 			response.Move = dir
@@ -70,13 +71,15 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	if response.Move == types.MoveDirUnknown && request.You.Health < 15 {
 		dir, distance := shortestSafePathToFood(request, graph)
 		if float64(request.You.Health)-distance <= 2 {
+			fmt.Println("eating")
 			response.Move = dir
 		}
 	}
 
-	if response.Move == types.MoveDirUnknown {
+	if response.Move == types.MoveDirUnknown && request.Turn > 3 {
 		dir, _, ok := grid.FindPath(graph, request.You.Body[0], request.You.Body[len(request.You.Body)-1])
 		if ok {
+			fmt.Println("coiling")
 			response.Move = dir
 		}
 	}
@@ -96,6 +99,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
+			fmt.Println("fleeing")
 			response.Move = nghbr.dir
 		}
 	}
