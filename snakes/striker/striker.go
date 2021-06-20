@@ -84,6 +84,9 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 			{Y: h.Y - 1, X: h.X},
 			{Y: h.Y + 1, X: h.X},
 		} {
+			if _, ok := g.Cells[nghbr]; !ok {
+				continue
+			}
 			g.Cells[nghbr] = grid.Cell{Content: grid.ContentTypeAvoid}
 		}
 	}
