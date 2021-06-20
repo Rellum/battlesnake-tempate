@@ -61,6 +61,10 @@ func TestMove(t *testing.T) {
 			requestFile: "case_11.json",
 			possible:    []types.MoveDir{"down"},
 		},
+		{
+			requestFile: "case_12.json",
+			possible:    []types.MoveDir{"left", "down"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.requestFile, func(t *testing.T) {

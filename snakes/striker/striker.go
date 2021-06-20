@@ -60,7 +60,8 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	snakes := grid.Snakes(request.Board)
 
 	var response types.SnakeMove
-	if len(snakes) > 1 && snakes[0].Name == request.You.Name {
+	amLongest := snakes[0].Name == request.You.Name
+	if len(snakes) > 1 && amLongest {
 		fmt.Println("hunting")
 		dir, _, ok := grid.FindPath(graph, request.You.Body[0], snakes[1].Head)
 		if ok {
@@ -68,9 +69,9 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if response.Move == types.MoveDirUnknown && request.You.Health < 15 {
+	if response.Move == types.MoveDirUnknown && (!amLongest || request.You.Health < 15) {
 		dir, distance := shortestSafePathToFood(request, graph)
-		if float64(request.You.Health)-distance <= 2 {
+		if !amLongest || float64(request.You.Health)-distance <= 2 {
 			fmt.Println("eating")
 			response.Move = dir
 		}

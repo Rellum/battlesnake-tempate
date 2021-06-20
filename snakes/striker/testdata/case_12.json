@@ -1,0 +1,99 @@
+{
+  "game": {
+    "id": "c2aacef7-f361-4d65-908b-46dee582c49f"
+  },
+  "turn": 24,
+  "board": {
+    "width": 11,
+    "height": 11,
+    "snakes": [
+      {
+        "id": "gs_PDxK8pxYgPPvpp6kkbgfpHpT",
+        "name": "striker",
+        "body": [
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 9
+          }
+        ],
+        "health": 76
+      },
+      {
+        "id": "gs_gdcVfmCXGDFBr9dqqwChJX4c",
+        "name": "Toby Flendersnake",
+        "body": [
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 8
+          }
+        ],
+        "health": 78
+      }
+    ],
+    "food": [
+      {
+        "x": 0,
+        "y": 6
+      },
+      {
+        "x": 8,
+        "y": 4
+      },
+      {
+        "x": 8,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 5
+      },
+      {
+        "x": 5,
+        "y": 6
+      },
+      {
+        "x": 10,
+        "y": 1
+      }
+    ]
+  },
+  "you": {
+    "id": "gs_PDxK8pxYgPPvpp6kkbgfpHpT",
+    "name": "striker",
+    "body": [
+      {
+        "x": 7,
+        "y": 7
+      },
+      {
+        "x": 7,
+        "y": 8
+      },
+      {
+        "x": 7,
+        "y": 9
+      }
+    ],
+    "health": 76
+  }
+}

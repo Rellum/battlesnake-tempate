@@ -5,12 +5,6 @@ import (
 	"github.com/BattlesnakeOfficial/rules/cli/commands"
 )
 
-type graph struct {
-	edges map[edge]struct{}
-}
-
-type edge struct{ from, to rules.Point }
-
 type grid struct {
 	height, width int
 	cells         map[rules.Point]cell

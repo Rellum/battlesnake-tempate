@@ -48,7 +48,7 @@ func Snakes(board types.BoardState) []Snake {
 		snakes[i].Head = snake.Body[0]
 	}
 	sort.Slice(snakes, func(i, j int) bool {
-		return snakeLengths[snakes[i].Name] < snakeLengths[snakes[j].Name]
+		return snakeLengths[snakes[i].Name] > snakeLengths[snakes[j].Name]
 	})
 	return snakes
 }
