@@ -73,10 +73,14 @@ func TestMove(t *testing.T) {
 			requestFile: "case_14.json",
 			possible:    []types.MoveDir{"down"},
 		},
+		{
+			requestFile: "case_15.json",
+			possible:    []types.MoveDir{"right"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.requestFile, func(t *testing.T) {
-			file, err := os.Open(path.Join("testdata", tc.requestFile))
+			file, err := os.Open(path.Join("../../testdata", tc.requestFile))
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()

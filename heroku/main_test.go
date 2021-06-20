@@ -25,7 +25,7 @@ import (
 
 func TestPretty(t *testing.T) {
 	g := goldie.New(t)
-	err := filepath.Walk("testdata", func(p string, info fs.FileInfo, err error) error {
+	err := filepath.Walk("../testdata", func(p string, info fs.FileInfo, err error) error {
 		if filepath.Ext(info.Name()) != ".json" {
 			return nil
 		}
@@ -41,7 +41,7 @@ func TestPretty(t *testing.T) {
 
 func TestTTL(t *testing.T) {
 	g := goldie.New(t)
-	err := filepath.Walk("testdata", func(p string, info fs.FileInfo, err error) error {
+	err := filepath.Walk("../testdata", func(p string, info fs.FileInfo, err error) error {
 		if filepath.Ext(info.Name()) != ".json" {
 			return nil
 		}
@@ -107,7 +107,7 @@ func TestMove(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.requestFile, func(t *testing.T) {
-			file, err := os.Open(path.Join("testdata", tc.requestFile))
+			file, err := os.Open(path.Join("../testdata", tc.requestFile))
 			require.NoError(t, err)
 
 			recorder := httptest.NewRecorder()
@@ -219,7 +219,7 @@ func TestDoMove(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.requestFile, func(t *testing.T) {
-			b, err := os.ReadFile(path.Join("testdata", tc.requestFile))
+			b, err := os.ReadFile(path.Join("../testdata", tc.requestFile))
 			require.NoError(t, err)
 
 			request := GameRequest{}
@@ -334,7 +334,7 @@ func TestFloodFill(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%s_x%d_y%d_l%d", tc.requestFile, tc.start.X, tc.start.Y, tc.limit), func(t *testing.T) {
-			request := parseGameRequest(t, path.Join("testdata", tc.requestFile))
+			request := parseGameRequest(t, path.Join("../testdata", tc.requestFile))
 
 			grid := makeGrid(request)
 

@@ -1,0 +1,54 @@
+package engine
+
+import "battlesnake/pkg/types"
+
+func MoveSnakes(b types.BoardState, moves []types.SnakeMove) types.BoardState {
+	res := b
+	for i := 0; i < len(b.Snakes); i++ {
+		snake := &res.Snakes[i]
+		copy(snake.Body, b.Snakes[i].Body)
+		if snake.EliminatedCause != types.NotEliminated {
+			continue
+		}
+
+		for _, move := range moves {
+			if move.ID == snake.ID {
+				var newHead = types.Point{}
+				switch move.Move {
+				case types.MoveDirDown:
+					newHead.X = snake.Body[0].X
+					newHead.Y = snake.Body[0].Y - 1
+				case types.MoveDirLeft:
+					newHead.X = snake.Body[0].X - 1
+					newHead.Y = snake.Body[0].Y
+				case types.MoveDirRight:
+					newHead.X = snake.Body[0].X + 1
+					newHead.Y = snake.Body[0].Y
+				default:
+					newHead.X = snake.Body[0].X
+					newHead.Y = snake.Body[0].Y + 1
+				}
+
+				// Append new head, pop old tail
+				snake.Shout = move.Shout
+				snake.Health -= 1
+				var fi int
+				for fi < len(res.Food) {
+					if res.Food[fi] != newHead {
+						fi++
+						continue
+					}
+
+					res.Food = append(res.Food[:fi], res.Food[fi+1:]...)
+					snake.Health = 100
+					fi++
+				}
+				snake.Body = append([]types.Point{newHead}, snake.Body...)
+				if snake.Health != 100 {
+					snake.Body = append([]types.Point{}, snake.Body[:len(snake.Body)-1]...)
+				}
+			}
+		}
+	}
+	return res
+}

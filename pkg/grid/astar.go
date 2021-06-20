@@ -25,7 +25,7 @@ func FindPath(g *Grid, from, to types.Point) (nextDir types.MoveDir, distance in
 	return nextDir, len(path) - 1
 }
 
-func search(g *Grid, from, to types.Point) []types.Point {
+func search(g *Grid, to, from types.Point) []types.Point {
 	nm := make(map[types.Point]*aStarNode)
 	nq := &priorityQueue{}
 	heap.Init(nq)
@@ -58,7 +58,7 @@ func search(g *Grid, from, to types.Point) []types.Point {
 			{Y: current.p.Y - 1, X: current.p.X},
 			{Y: current.p.Y + 1, X: current.p.X},
 		} {
-			if g.Cells[nghbr].Content != ContentTypeEmpty && g.Cells[nghbr].Content != ContentTypeFood {
+			if !IsValid(g, nghbr) && nghbr != to {
 				continue
 			}
 
@@ -107,8 +107,7 @@ type priorityQueue []*aStarNode
 func (pq priorityQueue) Len() int { return len(pq) }
 
 func (pq priorityQueue) Less(i, j int) bool {
-	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
-	return pq[i].priority > pq[j].priority
+	return pq[i].priority < pq[j].priority
 }
 
 func (pq priorityQueue) Swap(i, j int) {

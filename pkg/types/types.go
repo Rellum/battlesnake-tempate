@@ -13,16 +13,27 @@ type Point struct {
 }
 
 type Snake struct {
-	ID              string  `json:"id"`
-	Name            string  `json:"name"`
-	Health          int     `json:"health"`
-	Body            []Point `json:"body"`
-	Head            Point   `json:"head"`
-	Length          int     `json:"length"`
-	Shout           string  `json:"shout"`
-	EliminatedCause string  `json:"eliminated_cause"`
-	EliminatedBy    string  `json:"eliminated_by"`
+	ID              string          `json:"id"`
+	Name            string          `json:"name"`
+	Health          int             `json:"health"`
+	Body            []Point         `json:"body"`
+	Head            Point           `json:"head"`
+	Length          int             `json:"length"`
+	Shout           string          `json:"shout"`
+	EliminatedCause EliminatedCause `json:"eliminated_cause"`
+	EliminatedBy    string          `json:"eliminated_by"`
 }
+
+type EliminatedCause string
+
+const (
+	NotEliminated                   EliminatedCause = ""
+	EliminatedByCollision           EliminatedCause = "snake-collision"
+	EliminatedBySelfCollision       EliminatedCause = "snake-self-collision"
+	EliminatedByOutOfHealth         EliminatedCause = "out-of-health"
+	EliminatedByHeadToHeadCollision EliminatedCause = "head-collision"
+	EliminatedByOutOfBounds         EliminatedCause = "wall-collision"
+)
 
 type BoardState struct {
 	Height int     `json:"height"`

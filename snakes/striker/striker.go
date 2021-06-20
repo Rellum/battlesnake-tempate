@@ -1,6 +1,7 @@
 package striker
 
 import (
+	"battlesnake/pkg/engine"
 	"battlesnake/pkg/grid"
 	"battlesnake/pkg/types"
 	"encoding/json"
@@ -19,9 +20,6 @@ const snakeInfo = `{
   "version" : "0.0.1-beta"
 }`
 
-// HandleIndex is called when your Battlesnake is created and refreshed
-// by play.battlesnake.com. BattlesnakeInfoResponse contains information about
-// your Battlesnake, including what it should look like on the game board.
 func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err := w.Write([]byte(snakeInfo))
@@ -30,9 +28,6 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandleStart is called at the start of each game your Battlesnake is playing.
-// The GameRequest object contains information about the game that's about to start.
-// TODO: Use this function to decide how your Battlesnake is going to look on the board.
 func HandleStart(w http.ResponseWriter, r *http.Request) {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	request := types.GameRequest{}
@@ -45,9 +40,6 @@ func HandleStart(w http.ResponseWriter, r *http.Request) {
 	fmt.Print("START\n")
 }
 
-// HandleMove is called for each turn of each game.
-// Valid responses are "up", "down", "left", or "right".
-// TODO: Use the information in the GameRequest object to determine your next move.
 func HandleMove(w http.ResponseWriter, r *http.Request) {
 	request := types.GameRequest{}
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -55,54 +47,15 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	g := grid.Make(request.Board)
-	snakes := grid.Snakes(request.Board)
-
-	var response types.SnakeMove
-	amLongest := snakes[0].Name == request.You.Name
-	if len(snakes) > 1 && amLongest {
-		fmt.Println("hunting")
-		dir, dist := grid.FindPath(&g, request.You.Body[0], snakes[1].Head)
-		if dist > 0 {
-			response.Move = dir
+	var ml []types.SnakeMove
+	for _, snake := range request.Board.Snakes {
+		if snake.ID == request.You.ID {
+			continue
 		}
+		ml = append(ml, bestMove(request.Board, snake, request.Turn))
 	}
 
-	if response.Move == types.MoveDirUnknown && (!amLongest || request.You.Health < 15) {
-		dir, distance := shortestSafePathToFood(request, &g)
-		if !amLongest || request.You.Health-distance <= 2 {
-			fmt.Println("eating")
-			response.Move = dir
-		}
-	}
-
-	if response.Move == types.MoveDirUnknown && request.Turn > 1 {
-		dir, dist := grid.FindPath(&g, request.You.Body[0], request.You.Body[len(request.You.Body)-1])
-		if dist > 1 {
-			fmt.Println("coiling")
-			response.Move = dir
-		}
-	}
-
-	if response.Move == types.MoveDirUnknown {
-		h := request.You.Body[0]
-		for _, nghbr := range []struct {
-			p   types.Point
-			dir types.MoveDir
-		}{
-			{p: types.Point{Y: h.Y, X: h.X - 1}, dir: types.MoveDirLeft},
-			{p: types.Point{Y: h.Y, X: h.X + 1}, dir: types.MoveDirRight},
-			{p: types.Point{Y: h.Y - 1, X: h.X}, dir: types.MoveDirDown},
-			{p: types.Point{Y: h.Y + 1, X: h.X}, dir: types.MoveDirUp},
-		} {
-			if g.Cells[nghbr.p].Content != grid.ContentTypeEmpty && g.Cells[nghbr.p].Content != grid.ContentTypeFood {
-				continue
-			}
-
-			fmt.Println("fleeing")
-			response.Move = nghbr.dir
-		}
-	}
+	response := bestMove(engine.MoveSnakes(request.Board, ml), request.You, request.Turn)
 
 	fmt.Printf("MOVE: %s\n", response.Move)
 	w.Header().Set("Content-Type", "application/json")
@@ -112,18 +65,73 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func shortestSafePathToFood(req types.GameRequest, g *grid.Grid) (nextDir types.MoveDir, distance int) {
-	sort.Slice(req.Board.Food, func(i, j int) bool {
-		return types.Distance(req.You.Body[0], req.Board.Food[i]) < types.Distance(req.You.Body[0], req.Board.Food[j])
+func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
+	g := grid.Make(b)
+	snakes := grid.Snakes(b)
+
+	response := types.SnakeMove{ID: you.ID}
+	amLongest := snakes[0].Name == you.Name
+	if len(snakes) > 1 && amLongest && snakes[0].Length > snakes[1].Length {
+		dir, dist := grid.FindPath(&g, you.Body[0], snakes[1].Head)
+		if dist > 0 {
+			fmt.Println(you.Name, "hunting")
+			response.Move = dir
+			return response
+		}
+	}
+
+	if !amLongest || you.Health < 15 {
+		dir, distance := shortestSafePathToFood(b, you, &g)
+		if distance > 0 && (!amLongest || you.Health-distance <= 2) {
+			fmt.Println(you.Name, "eating")
+			response.Move = dir
+			return response
+		}
+	}
+
+	if turn > 1 {
+		dir, dist := grid.FindPath(&g, you.Body[0], you.Body[len(you.Body)-1])
+		if dist > 1 {
+			fmt.Println(you.Name, "coiling")
+			response.Move = dir
+			return response
+		}
+	}
+
+	fmt.Println(you.Name, "fleeing")
+	h := you.Body[0]
+	var biggestArea int
+	for _, nghbr := range []struct {
+		p   types.Point
+		dir types.MoveDir
+	}{
+		{p: types.Point{Y: h.Y, X: h.X - 1}, dir: types.MoveDirLeft},
+		{p: types.Point{Y: h.Y, X: h.X + 1}, dir: types.MoveDirRight},
+		{p: types.Point{Y: h.Y - 1, X: h.X}, dir: types.MoveDirDown},
+		{p: types.Point{Y: h.Y + 1, X: h.X}, dir: types.MoveDirUp},
+	} {
+		area := grid.FloodFill(&g, nghbr.p, len(you.Body))
+		if area > biggestArea {
+			biggestArea = area
+			response.Move = nghbr.dir
+		}
+	}
+
+	return response
+}
+
+func shortestSafePathToFood(b types.BoardState, you types.Snake, g *grid.Grid) (nextDir types.MoveDir, distance int) {
+	sort.Slice(b.Food, func(i, j int) bool {
+		return types.Distance(you.Body[0], b.Food[i]) < types.Distance(you.Body[0], b.Food[j])
 	})
 
-	for i := 0; i < len(req.Board.Food); i++ {
-		dir, dist := grid.FindPath(g, req.You.Body[0], req.Board.Food[i])
+	for i := 0; i < len(b.Food); i++ {
+		dir, dist := grid.FindPath(g, you.Body[0], b.Food[i])
 		if dist == 0 {
 			continue
 		}
 
-		_, dist2 := grid.FindPath(g, req.Board.Food[i], req.You.Body[len(req.You.Body)-1])
+		_, dist2 := grid.FindPath(g, b.Food[i], you.Body[len(you.Body)-1])
 		if dist2 == 0 {
 			continue
 		}

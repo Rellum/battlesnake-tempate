@@ -2,6 +2,8 @@ package grid
 
 import (
 	"battlesnake/pkg/types"
+	"bytes"
+	"fmt"
 	"sort"
 )
 
@@ -77,4 +79,80 @@ func Make(board types.BoardState) Grid {
 		Height: board.Height,
 		Cells:  cells,
 	}
+}
+
+func IsValid(g *Grid, p types.Point) bool {
+	v, ok := g.Cells[p]
+	if !ok {
+		return false
+	}
+
+	if v.Content == ContentTypeEmpty || v.Content == ContentTypeFood {
+		return true
+	}
+
+	return false
+}
+
+func FloodFill(g *Grid, p types.Point, limit int) int {
+	return floodFill(g, p, make(map[types.Point]struct{}), limit, 0)
+}
+
+func floodFill(g *Grid, p types.Point, visited map[types.Point]struct{}, limit, found int) int {
+	if _, ok := visited[p]; ok {
+		return 0
+	}
+	visited[p] = struct{}{}
+
+	if limit-found <= 0 {
+		return 0
+	}
+
+	if !IsValid(g, p) {
+		return 0
+	}
+
+	sum := found + 1
+	sum = sum + floodFill(g, types.Point{X: p.X, Y: p.Y - 1}, visited, limit, sum)
+	sum = sum + floodFill(g, types.Point{X: p.X, Y: p.Y + 1}, visited, limit, sum)
+	sum = sum + floodFill(g, types.Point{X: p.X - 1, Y: p.Y}, visited, limit, sum)
+	sum = sum + floodFill(g, types.Point{X: p.X + 1, Y: p.Y}, visited, limit, sum)
+
+	return sum
+}
+
+func Print(g *Grid) []byte {
+	var res bytes.Buffer
+	for y := g.Height - 1; y >= 0; y-- {
+		fmt.Fprint(&res, "|")
+		for x := 0; x < g.Width; x++ {
+			c := g.Cells[types.Point{x, y}]
+			switch c.Content {
+			case ContentTypeFood:
+				fmt.Fprint(&res, "*")
+			case ContentTypeEmpty:
+				fmt.Fprint(&res, " ")
+			case ContentTypeSnake:
+				fmt.Fprint(&res, "s")
+			}
+		}
+		fmt.Fprintln(&res, "|")
+	}
+	return res.Bytes()
+}
+
+func PrintTTL(g *Grid) []byte {
+	var res bytes.Buffer
+	for y := g.Height - 1; y >= 0; y-- {
+		fmt.Fprint(&res, "|")
+		for x := 0; x < g.Width; x++ {
+			if g.Cells[types.Point{x, y}].TTL == 0 {
+				fmt.Fprint(&res, "  |")
+				continue
+			}
+			fmt.Fprintf(&res, "%02d|", g.Cells[types.Point{x, y}].TTL)
+		}
+		fmt.Fprintln(&res, "|")
+	}
+	return res.Bytes()
 }
