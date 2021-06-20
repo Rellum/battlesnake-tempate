@@ -5,9 +5,6 @@ github.com/BattlesnakeOfficial/rules/cli/commands
 # github.com/alcortesm/sample v1.0.4
 ## explicit
 github.com/alcortesm/sample
-# github.com/beefsack/go-astar v0.0.0-20200827232313-4ecf9e304482
-## explicit
-github.com/beefsack/go-astar
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.4.7

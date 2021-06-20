@@ -56,30 +56,29 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g := grid.Make(request.Board)
-	graph := grid.MakeGraph(g)
 	snakes := grid.Snakes(request.Board)
 
 	var response types.SnakeMove
 	amLongest := snakes[0].Name == request.You.Name
 	if len(snakes) > 1 && amLongest {
 		fmt.Println("hunting")
-		dir, _, ok := grid.FindPath(graph, request.You.Body[0], snakes[1].Head)
-		if ok {
+		dir, dist := grid.FindPath(&g, request.You.Body[0], snakes[1].Head)
+		if dist > 0 {
 			response.Move = dir
 		}
 	}
 
 	if response.Move == types.MoveDirUnknown && (!amLongest || request.You.Health < 15) {
-		dir, distance := shortestSafePathToFood(request, graph)
-		if !amLongest || float64(request.You.Health)-distance <= 2 {
+		dir, distance := shortestSafePathToFood(request, &g)
+		if !amLongest || request.You.Health-distance <= 2 {
 			fmt.Println("eating")
 			response.Move = dir
 		}
 	}
 
-	if response.Move == types.MoveDirUnknown && request.Turn > 3 {
-		dir, _, ok := grid.FindPath(graph, request.You.Body[0], request.You.Body[len(request.You.Body)-1])
-		if ok {
+	if response.Move == types.MoveDirUnknown && request.Turn > 1 {
+		dir, dist := grid.FindPath(&g, request.You.Body[0], request.You.Body[len(request.You.Body)-1])
+		if dist > 1 {
 			fmt.Println("coiling")
 			response.Move = dir
 		}
@@ -113,19 +112,19 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func shortestSafePathToFood(req types.GameRequest, gph *grid.Graph) (nextDir types.MoveDir, distance float64) {
+func shortestSafePathToFood(req types.GameRequest, g *grid.Grid) (nextDir types.MoveDir, distance int) {
 	sort.Slice(req.Board.Food, func(i, j int) bool {
 		return types.Distance(req.You.Body[0], req.Board.Food[i]) < types.Distance(req.You.Body[0], req.Board.Food[j])
 	})
 
 	for i := 0; i < len(req.Board.Food); i++ {
-		dir, dist, ok := grid.FindPath(gph, req.You.Body[0], req.Board.Food[i])
-		if !ok {
+		dir, dist := grid.FindPath(g, req.You.Body[0], req.Board.Food[i])
+		if dist == 0 {
 			continue
 		}
 
-		_, _, ok = grid.FindPath(gph, req.Board.Food[i], req.You.Body[len(req.You.Body)-1])
-		if !ok {
+		_, dist2 := grid.FindPath(g, req.Board.Food[i], req.You.Body[len(req.You.Body)-1])
+		if dist2 == 0 {
 			continue
 		}
 
