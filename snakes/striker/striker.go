@@ -52,10 +52,10 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 		if snake.ID == request.You.ID {
 			continue
 		}
-		ml = append(ml, bestMove(request.Board, snake, request.Turn))
+		ml = append(ml, bestMove(request.Board, snake, request.Turn, 0))
 	}
 
-	response := bestMove(engine.MoveSnakes(request.Board, ml), request.You, request.Turn)
+	response := bestMove(engine.MoveSnakes(request.Board, ml), request.You, request.Turn, 1)
 
 	fmt.Printf("MOVE: %s\n", response.Move)
 	w.Header().Set("Content-Type", "application/json")
@@ -65,7 +65,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
+func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.SnakeMove {
 	g := grid.Make(b)
 	snakes := grid.Snakes(b)
 
@@ -77,7 +77,7 @@ func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
 			continue
 		}
 
-		h := snake.Body[0]
+		h := snake.Body[ahead]
 		for _, nghbr := range []types.Point{
 			{Y: h.Y, X: h.X - 1},
 			{Y: h.Y, X: h.X + 1},
