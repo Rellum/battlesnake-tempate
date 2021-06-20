@@ -1,14 +1,15 @@
 package striker
 
 import (
-	"battlesnake/pkg/engine"
-	"battlesnake/pkg/grid"
-	"battlesnake/pkg/types"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sort"
+
+	"battlesnake/pkg/engine"
+	"battlesnake/pkg/grid"
+	"battlesnake/pkg/types"
 )
 
 const snakeInfo = `{
@@ -68,6 +69,29 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
 	g := grid.Make(b)
 	snakes := grid.Snakes(b)
+
+	for _, snake := range b.Snakes {
+		if snake.ID == you.ID {
+			continue
+		}
+		if len(snake.Body) < len(you.Body) {
+			continue
+		}
+
+		h := snake.Body[0]
+		for _, nghbr := range []types.Point{
+			{Y: h.Y, X: h.X - 1},
+			{Y: h.Y, X: h.X + 1},
+			{Y: h.Y - 1, X: h.X},
+			{Y: h.Y + 1, X: h.X},
+		} {
+			if !grid.IsValid(&g, nghbr) {
+				continue
+			}
+
+			g.Cells[nghbr] = grid.Cell{Content: grid.ContentTypeAvoid}
+		}
+	}
 
 	response := types.SnakeMove{ID: you.ID}
 	amLongest := snakes[0].Name == you.Name

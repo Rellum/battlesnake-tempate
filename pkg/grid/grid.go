@@ -26,6 +26,7 @@ const (
 	ContentTypeSnake   CellContent = 2
 	ContentTypeFood    CellContent = 3
 	ContentTypeHazard  CellContent = 4
+	ContentTypeAvoid   CellContent = 5
 )
 
 type Cell struct {
