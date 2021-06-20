@@ -1,15 +1,14 @@
 package striker
 
 import (
+	"battlesnake/pkg/engine"
+	"battlesnake/pkg/grid"
+	"battlesnake/pkg/types"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sort"
-
-	"battlesnake/pkg/engine"
-	"battlesnake/pkg/grid"
-	"battlesnake/pkg/types"
 )
 
 const snakeInfo = `{
@@ -85,10 +84,6 @@ func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
 			{Y: h.Y - 1, X: h.X},
 			{Y: h.Y + 1, X: h.X},
 		} {
-			if !grid.IsValid(&g, nghbr) {
-				continue
-			}
-
 			g.Cells[nghbr] = grid.Cell{Content: grid.ContentTypeAvoid}
 		}
 	}
