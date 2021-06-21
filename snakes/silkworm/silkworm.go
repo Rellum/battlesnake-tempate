@@ -1,14 +1,12 @@
-package striker
+package silkworm
 
 import (
-	"battlesnake/pkg/engine"
 	"battlesnake/pkg/grid"
 	"battlesnake/pkg/types"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"sort"
 )
 
 const snakeInfo = `{
@@ -47,20 +45,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	var ml []types.SnakeMove
-	for _, snake := range request.Board.Snakes {
-		if snake.ID == request.You.ID {
-			continue
-		}
-		m := bestMove(request.Board, snake, request.Turn, 0)
-		if m.Move == types.MoveDirUnknown {
-			m = safestMove(request.Board, snake)
-		}
-
-		ml = append(ml, m)
-	}
-
-	response := bestMove(engine.MoveSnakes(request.Board, ml), request.You, request.Turn, 1)
+	response := bestMove(request.Board, request.You, request.Turn)
 	if response.Move == types.MoveDirUnknown {
 		response = safestMove(request.Board, request.You)
 	}
@@ -73,7 +58,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.SnakeMove {
+func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
 	g := grid.Make(b)
 	snakes := grid.Snakes(b)
 
@@ -85,7 +70,7 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 			continue
 		}
 
-		h := snake.Body[ahead]
+		h := snake.Body[0]
 		for _, nghbr := range []types.Point{
 			{Y: h.Y, X: h.X - 1},
 			{Y: h.Y, X: h.X + 1},
@@ -99,36 +84,47 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 		}
 	}
 
-	amLongest := snakes[0].Name == you.Name
-	if amLongest && len(snakes) > 1 && snakes[0].Length == snakes[1].Length {
-		amLongest = false
+	amShortest := snakes[len(snakes)-1].Name == you.Name
+	if !amShortest && len(snakes) > 1 && snakes[len(snakes)-2].Length == snakes[len(snakes)-1].Length {
+		amShortest = true
 	}
+
+	type dest struct {
+		dir  types.MoveDir
+		dist int
+	}
+	dests := make(map[string]dest)
 
 	response := types.SnakeMove{ID: you.ID}
-	if len(snakes) > 1 && amLongest {
-		dir, dist := grid.FindPath(&g, you.Body[0], snakes[1].Head)
-		if dist > 0 {
-			fmt.Println(you.Name, "hunting", snakes[1].Head)
-			response.Move = dir
-			return response
-		}
-	}
-
-	if !amLongest || you.Health < 15 {
-		dir, distance := shortestSafePathToFood(b, you, &g)
-		if distance > 0 && (!amLongest || you.Health-distance <= 2) {
-			response.Move = dir
-			return response
-		}
-	}
-
 	if turn > 1 {
 		dir, dist := grid.FindPath(&g, you.Body[0], you.Body[len(you.Body)-1])
-		if dist > 0 {
-			fmt.Println(you.Name, "coiling", you.Body[len(you.Body)-1])
-			response.Move = dir
-			return response
-		}
+		dests["tail"] = dest{dir: dir, dist: dist}
+	}
+
+	dir, dist := shortestSafePathToFood(b, you, &g)
+	dests["food"] = dest{dir: dir, dist: dist}
+
+	if len(snakes) > 1 {
+		dir, dist := closestVictim(b, you, &g)
+		dests["hunt"] = dest{dir: dir, dist: dist}
+	}
+
+	if amShortest || you.Health-dests["food"].dist <= 2 {
+		fmt.Println(you.Name, "eating", dests["food"].dir)
+		response.Move = dests["food"].dir
+		return response
+	}
+
+	if dests["tail"].dist > 0 && dests["hunt"].dist > 0 && dests["tail"].dist+1 > dests["hunt"].dist {
+		fmt.Println(you.Name, "hunting", dests["hunt"].dir)
+		response.Move = dests["hunt"].dir
+		return response
+	}
+
+	if dests["tail"].dist > 0 {
+		fmt.Println(you.Name, "coiling", dests["tail"].dir)
+		response.Move = dests["tail"].dir
+		return response
 	}
 
 	return response
@@ -162,13 +158,14 @@ func safestMove(b types.BoardState, you types.Snake) types.SnakeMove {
 }
 
 func shortestSafePathToFood(b types.BoardState, you types.Snake, g *grid.Grid) (nextDir types.MoveDir, distance int) {
-	sort.Slice(b.Food, func(i, j int) bool {
-		return types.Distance(you.Body[0], b.Food[i]) < types.Distance(you.Body[0], b.Food[j])
-	})
-
+	var bestDir types.MoveDir
+	var bestDist = b.Width * b.Height
 	for i := 0; i < len(b.Food); i++ {
 		dir, dist := grid.FindPath(g, you.Body[0], b.Food[i])
 		if dist == 0 {
+			continue
+		}
+		if dist > bestDist {
 			continue
 		}
 
@@ -177,11 +174,34 @@ func shortestSafePathToFood(b types.BoardState, you types.Snake, g *grid.Grid) (
 			continue
 		}
 
-		fmt.Println(you.Name, "eating", b.Food[i])
-		return dir, dist
+		bestDist = dist
+		bestDir = dir
 	}
 
-	return types.MoveDirUnknown, 0
+	return bestDir, bestDist
+}
+
+func closestVictim(b types.BoardState, you types.Snake, g *grid.Grid) (nextDir types.MoveDir, distance int) {
+	var bestDir types.MoveDir
+	var bestDist = b.Width * b.Height
+	for _, snake := range b.Snakes {
+		if len(snake.Body) >= len(you.Body) {
+			continue
+		}
+
+		dir, dist := grid.FindPath(g, you.Body[0], snake.Body[0])
+		if dist == 0 {
+			continue
+		}
+		if dist > bestDist {
+			continue
+		}
+
+		bestDist = dist
+		bestDir = dir
+	}
+
+	return bestDir, bestDist
 }
 
 // HandleEnd is called when a game your Battlesnake was playing has ended.

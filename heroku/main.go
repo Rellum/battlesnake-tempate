@@ -1,6 +1,7 @@
 package main
 
 import (
+	"battlesnake/snakes/silkworm"
 	"battlesnake/snakes/striker"
 	"encoding/json"
 	"fmt"
@@ -542,10 +543,15 @@ func main() {
 	http.HandleFunc("/move", HandleMove)
 	http.HandleFunc("/end", HandleEnd)
 
-	http.HandleFunc("/striker/", striker.HandleIndex)
+	http.HandleFunc("/striker", striker.HandleIndex)
 	http.HandleFunc("/striker/start", striker.HandleStart)
 	http.HandleFunc("/striker/move", striker.HandleMove)
 	http.HandleFunc("/striker/end", striker.HandleEnd)
+
+	http.HandleFunc("/silkworm", silkworm.HandleIndex)
+	http.HandleFunc("/silkworm/start", silkworm.HandleStart)
+	http.HandleFunc("/silkworm/move", silkworm.HandleMove)
+	http.HandleFunc("/silkworm/end", silkworm.HandleEnd)
 
 	fmt.Printf("Starting Battlesnake Server at http://0.0.0.0:%s...\n", port)
 	err := http.ListenAndServe(":"+port, nil)
