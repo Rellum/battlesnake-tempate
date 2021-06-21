@@ -7,7 +7,8 @@ import (
 	"github.com/BattlesnakeOfficial/rules"
 )
 
-var chars = []rune{'■', '⌀', '●', '⍟', '◘', '☺', '□', '☻'}
+var hChars = []rune{'■', '●', '◘', '☻'}
+var chars = []rune{'□', '⍟', '⌀', '☺'}
 
 func Print(state BoardState, outOfBounds []rules.Point) []byte {
 	var o bytes.Buffer
@@ -33,12 +34,12 @@ func Print(state BoardState, outOfBounds []rules.Point) []byte {
 	for i, s := range state.Snakes {
 		for j, b := range s.Body {
 			if j == 0 {
-				board[b.X][b.Y] = 'H'
+				board[b.X][b.Y] = hChars[i]
 			} else {
 				board[b.X][b.Y] = chars[i]
 			}
 		}
-		o.WriteString(fmt.Sprintf("%v %c: %v\n", s.Name, chars[i], s))
+		o.WriteString(fmt.Sprintf("%v %c%c%c: %v\n", s.Name, hChars[i], chars[i], chars[i], s))
 	}
 	for y := state.Height - 1; y >= 0; y-- {
 		for x := 0; x < state.Width; x++ {

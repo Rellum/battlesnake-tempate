@@ -1,6 +1,7 @@
 package main
 
 import (
+	"battlesnake/pkg/types"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -30,9 +31,9 @@ func TestPretty(t *testing.T) {
 			return nil
 		}
 		t.Run(info.Name(), func(t *testing.T) {
-			request := parseGameRequest(t, p)
+			request := parseTypesGameRequest(t, p)
 
-			g.Update(t, strings.TrimSuffix(info.Name(), ".json"), []byte(pretty(request)))
+			g.Update(t, strings.TrimSuffix(info.Name(), ".json"), types.Print(request.Board, nil))
 		})
 		return nil
 	})
@@ -365,6 +366,17 @@ func parseGameRequest(t *testing.T, filename string) GameRequest {
 	assert.NoError(t, err)
 
 	var request GameRequest
+	err = json.Unmarshal(b, &request)
+	assert.NoError(t, err)
+
+	return request
+}
+
+func parseTypesGameRequest(t *testing.T, filename string) types.GameRequest {
+	b, err := os.ReadFile(filename)
+	assert.NoError(t, err)
+
+	var request types.GameRequest
 	err = json.Unmarshal(b, &request)
 	assert.NoError(t, err)
 

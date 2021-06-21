@@ -42,7 +42,7 @@ func Test(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			request := parseGameRequest(t, filepath.Join("../../testdata", "case_1.json"))
-			//g.Update(t, "case_1", printMap(request.Board, nil))
+			//g.Update(t, "case_1", types.Print(request.Board, nil))
 
 			actual := MoveSnakes(request.Board, tc.moves)
 

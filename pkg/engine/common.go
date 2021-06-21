@@ -1,15 +1,21 @@
 package engine
 
-import "battlesnake/pkg/types"
+import (
+	"battlesnake/pkg/types"
+	"log"
+
+	"github.com/mitchellh/copystructure"
+)
 
 func MoveSnakes(b types.BoardState, moves []types.SnakeMove) types.BoardState {
-	res := b
-	for i := 0; i < len(b.Snakes); i++ {
-		snake := &res.Snakes[i]
-		copy(snake.Body, b.Snakes[i].Body)
-		if snake.EliminatedCause != types.NotEliminated {
-			continue
-		}
+	r, err := copystructure.Copy(b)
+	if err != nil {
+		log.Println(err)
+	}
+	res := r.(types.BoardState)
+
+	for i := 0; i < len(res.Snakes); i++ {
+		snake := res.Snakes[i]
 
 		for _, move := range moves {
 			if move.ID == snake.ID {

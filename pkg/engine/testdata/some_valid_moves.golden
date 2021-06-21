@@ -1,14 +1,14 @@
 Food ⚕: [{5 5} {9 0} {2 6}]
-My Snake ■: {snake-508e96ac-94ad-11ea-bb37 My Snake 54 [{0 0} {1 0} {2 0}] {0 0} 3 why are we shouting??  }
-Another Snake ⌀: {snake-b67f4906-94ae-11ea-bb37 Another Snake 15 [{4 4} {5 4} {5 3} {6 3}] {5 4} 4 Something!  }
+My Snake ■□□: {snake-508e96ac-94ad-11ea-bb37 My Snake 54 [{0 0} {1 0} {2 0}] {0 0} 3 why are we shouting??  }
+Another Snake ●⍟⍟: {snake-b67f4906-94ae-11ea-bb37 Another Snake 16 [{5 4} {5 3} {6 3} {6 2}] {5 4} 4 I'm not really sure...  }
 ◦◦◦◦◦◦◦◦◦◦◦
 ◦◦◦◦◦◦◦◦◦◦◦
 ◦◦◦◦◦◦◦◦◦◦◦
 ◦◦◦◦◦◦◦◦◦◦◦
 ◦◦⚕◦◦◦◦◦◦◦◦
 ◦◦◦◦◦⚕◦◦◦◦◦
-◦◦◦◦H⌀◦◦◦◦◦
-◦◦◦◦◦⌀⌀◦◦◦◦
+◦◦◦◦◦●◦◦◦◦◦
+◦◦◦◦◦⍟⍟◦◦◦◦
+◦◦◦◦◦◦⍟◦◦◦◦
 ◦◦◦◦◦◦◦◦◦◦◦
-◦◦◦◦◦◦◦◦◦◦◦
-H■■◦◦◦◦◦◦⚕◦
+■□□◦◦◦◦◦◦⚕◦

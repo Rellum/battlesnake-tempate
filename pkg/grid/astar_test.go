@@ -3,9 +3,7 @@ package grid
 import (
 	"battlesnake/pkg/types"
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -65,7 +63,7 @@ func TestFindPath(t *testing.T) {
 			requestFile: "case_13.json",
 			from:        types.Point{X: 3, Y: 1},
 			to:          types.Point{X: 1, Y: 1},
-			dir:         types.MoveDirUp,
+			dir:         types.MoveDirDown,
 			dist:        4,
 		},
 		{
@@ -116,15 +114,4 @@ func printPath(height, width int, pl []types.Point) []byte {
 		fmt.Fprintln(&res, "|")
 	}
 	return res.Bytes()
-}
-
-func parseGameRequest(t *testing.T, filename string) types.GameRequest {
-	b, err := os.ReadFile(filename)
-	require.NoError(t, err)
-
-	var request types.GameRequest
-	err = json.Unmarshal(b, &request)
-	require.NoError(t, err)
-
-	return request
 }

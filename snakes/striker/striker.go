@@ -52,10 +52,18 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 		if snake.ID == request.You.ID {
 			continue
 		}
-		ml = append(ml, bestMove(request.Board, snake, request.Turn, 0))
+		m := bestMove(request.Board, snake, request.Turn, 0)
+		if m.Move == types.MoveDirUnknown {
+			m = safestMove(request.Board, snake)
+		}
+
+		ml = append(ml, m)
 	}
 
 	response := bestMove(engine.MoveSnakes(request.Board, ml), request.You, request.Turn, 1)
+	if response.Move == types.MoveDirUnknown {
+		response = safestMove(request.Board, request.You)
+	}
 
 	fmt.Printf("MOVE: %s\n", response.Move)
 	w.Header().Set("Content-Type", "application/json")
@@ -84,7 +92,7 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 			{Y: h.Y - 1, X: h.X},
 			{Y: h.Y + 1, X: h.X},
 		} {
-			if _, ok := g.Cells[nghbr]; !ok {
+			if !grid.IsValid(&g, nghbr) {
 				continue
 			}
 			g.Cells[nghbr] = grid.Cell{Content: grid.ContentTypeAvoid}
@@ -93,10 +101,13 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 
 	response := types.SnakeMove{ID: you.ID}
 	amLongest := snakes[0].Name == you.Name
-	if len(snakes) > 1 && amLongest && snakes[0].Length > snakes[1].Length {
+	if amLongest && len(snakes) > 1 && snakes[0].Length == snakes[1].Length {
+		amLongest = false
+	}
+	if len(snakes) > 1 && amLongest {
 		dir, dist := grid.FindPath(&g, you.Body[0], snakes[1].Head)
 		if dist > 0 {
-			fmt.Println(you.Name, "hunting")
+			fmt.Println(you.Name, "hunting", snakes[1].Head)
 			response.Move = dir
 			return response
 		}
@@ -105,7 +116,6 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 	if !amLongest || you.Health < 15 {
 		dir, distance := shortestSafePathToFood(b, you, &g)
 		if distance > 0 && (!amLongest || you.Health-distance <= 2) {
-			fmt.Println(you.Name, "eating")
 			response.Move = dir
 			return response
 		}
@@ -113,14 +123,22 @@ func bestMove(b types.BoardState, you types.Snake, turn int, ahead int) types.Sn
 
 	if turn > 1 {
 		dir, dist := grid.FindPath(&g, you.Body[0], you.Body[len(you.Body)-1])
-		if dist > 1 {
-			fmt.Println(you.Name, "coiling")
+		if dist > 0 {
+			fmt.Println(you.Name, "coiling", you.Body[len(you.Body)-1])
 			response.Move = dir
 			return response
 		}
 	}
 
-	fmt.Println(you.Name, "fleeing")
+	return response
+}
+
+func safestMove(b types.BoardState, you types.Snake) types.SnakeMove {
+	g := grid.Make(b)
+
+	response := types.SnakeMove{ID: you.ID}
+
+	fmt.Println(you.Name, "wondering")
 	h := you.Body[0]
 	var biggestArea int
 	for _, nghbr := range []struct {
@@ -158,6 +176,7 @@ func shortestSafePathToFood(b types.BoardState, you types.Snake, g *grid.Grid) (
 			continue
 		}
 
+		fmt.Println(you.Name, "eating", b.Food[i])
 		return dir, dist
 	}
 

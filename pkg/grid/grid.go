@@ -135,6 +135,8 @@ func Print(g *Grid) []byte {
 				fmt.Fprint(&res, " ")
 			case ContentTypeSnake:
 				fmt.Fprint(&res, "s")
+			case ContentTypeAvoid:
+				fmt.Fprint(&res, "a")
 			}
 		}
 		fmt.Fprintln(&res, "|")

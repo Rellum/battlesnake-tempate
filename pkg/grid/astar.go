@@ -58,11 +58,29 @@ func search(g *Grid, to, from types.Point) []types.Point {
 			{Y: current.p.Y - 1, X: current.p.X},
 			{Y: current.p.Y + 1, X: current.p.X},
 		} {
-			if !IsValid(g, nghbr) && nghbr != to {
+			v, ok := g.Cells[nghbr]
+			if !ok {
 				continue
 			}
 
-			cost := current.cost + 1
+			cost := current.cost
+			switch v.Content {
+			case ContentTypeEmpty:
+				cost += 1
+				break
+			case ContentTypeFood:
+				cost += 2
+				break
+			case ContentTypeAvoid:
+				cost += float64(g.Height * g.Width)
+				break
+			default:
+				if nghbr == to {
+					break
+				}
+				continue
+			}
+
 			neighborNode := getNode(nm, nghbr)
 			if cost < neighborNode.cost {
 				if neighborNode.open {

@@ -77,6 +77,18 @@ func TestMove(t *testing.T) {
 			requestFile: "case_15.json",
 			possible:    []types.MoveDir{"right"},
 		},
+		{
+			requestFile: "input-1ba94b9b-abcf-42cf-adb0-8b109c5c60b3-turn-44.json",
+			possible:    []types.MoveDir{"up"},
+		},
+		{
+			requestFile: "input-4bf799fe-98d5-4cda-a1f9-f3c7cae759eb-turn-92.json",
+			possible:    []types.MoveDir{"down"},
+		},
+		{
+			requestFile: "input-e3ca55a5-f0e4-4a2e-bfe0-33774a4bb258-turn-30.json",
+			possible:    []types.MoveDir{"down"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.requestFile, func(t *testing.T) {
