@@ -1,7 +1,6 @@
 package grid
 
 import (
-	"battlesnake/pkg/types"
 	"bytes"
 	"fmt"
 	"path/filepath"
@@ -9,6 +8,8 @@ import (
 
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/require"
+
+	"battlesnake/pkg/types"
 )
 
 func TestSearch(t *testing.T) {
@@ -43,7 +44,7 @@ func TestSearch(t *testing.T) {
 			request := parseGameRequest(t, filepath.Join("../../testdata", tc.requestFile))
 			grd := Make(request.Board)
 
-			actual := search(&grd, tc.from, tc.to)
+			actual, _ := search(&grd, tc.from, tc.to)
 
 			g.Update(t, tc.name, printPath(grd.Height, grd.Width, actual))
 		})

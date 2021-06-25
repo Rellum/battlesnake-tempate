@@ -36,10 +36,11 @@ const (
 )
 
 type BoardState struct {
-	Height int     `json:"height"`
-	Width  int     `json:"width"`
-	Food   []Point `json:"food"`
-	Snakes []Snake `json:"snakes"`
+	Height  int     `json:"height"`
+	Width   int     `json:"width"`
+	Food    []Point `json:"food"`
+	Snakes  []Snake `json:"snakes"`
+	Hazards []Point `json:"hazards"`
 }
 
 type InfoResponse struct {
@@ -74,8 +75,8 @@ const (
 	MoveDirRight   MoveDir = "right"
 )
 
-func Distance(t, f Point) float64 {
+func Distance(t, f Point) int {
 	dX := t.X - f.X
 	dY := t.Y - f.Y
-	return math.Abs(float64(dX)) + math.Abs(float64(dY))
+	return int(math.Abs(float64(dX)) + math.Abs(float64(dY)))
 }

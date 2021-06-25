@@ -1,10 +1,11 @@
 package grid
 
 import (
-	"battlesnake/pkg/types"
 	"bytes"
 	"fmt"
 	"sort"
+
+	"battlesnake/pkg/types"
 )
 
 type Grid struct {
@@ -25,14 +26,14 @@ const (
 	ContentTypeEmpty   CellContent = 1
 	ContentTypeSnake   CellContent = 2
 	ContentTypeFood    CellContent = 3
-	ContentTypeHazard  CellContent = 4
-	ContentTypeAvoid   CellContent = 5
 )
 
 type Cell struct {
-	Content CellContent
-	SnakeID string
-	TTL     int
+	Content  CellContent
+	IsHazard bool
+	IsAvoid  bool
+	SnakeID  string
+	TTL      int
 }
 
 func Snakes(board types.BoardState) []Snake {
@@ -62,16 +63,28 @@ func Make(board types.BoardState) Grid {
 		}
 	}
 
+	for _, p := range board.Hazards {
+		c := cells[p]
+		c.IsHazard = true
+		cells[p] = c
+	}
+
 	for _, p := range board.Food {
-		cells[p] = Cell{Content: ContentTypeFood}
+		c := cells[p]
+		c.Content = ContentTypeFood
+		cells[p] = c
 	}
 
 	for _, snake := range board.Snakes {
 		if snake.EliminatedCause != "" {
 			continue
 		}
-		for i, coord := range snake.Body {
-			cells[coord] = Cell{Content: ContentTypeSnake, TTL: len(snake.Body) - i, SnakeID: snake.ID}
+		for i, p := range snake.Body {
+			c := cells[p]
+			c.Content = ContentTypeSnake
+			c.TTL = len(snake.Body) - i
+			c.SnakeID = snake.ID
+			cells[p] = c
 		}
 	}
 
@@ -128,6 +141,15 @@ func Print(g *Grid) []byte {
 		fmt.Fprint(&res, "|")
 		for x := 0; x < g.Width; x++ {
 			c := g.Cells[types.Point{x, y}]
+
+			if c.IsHazard {
+				fmt.Fprint(&res, "h")
+			}
+
+			if c.IsAvoid {
+				fmt.Fprint(&res, "s")
+			}
+
 			switch c.Content {
 			case ContentTypeFood:
 				fmt.Fprint(&res, "*")
@@ -135,8 +157,6 @@ func Print(g *Grid) []byte {
 				fmt.Fprint(&res, " ")
 			case ContentTypeSnake:
 				fmt.Fprint(&res, "s")
-			case ContentTypeAvoid:
-				fmt.Fprint(&res, "a")
 			}
 		}
 		fmt.Fprintln(&res, "|")

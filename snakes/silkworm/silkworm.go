@@ -1,12 +1,13 @@
 package silkworm
 
 import (
-	"battlesnake/pkg/grid"
-	"battlesnake/pkg/types"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+
+	"battlesnake/pkg/grid"
+	"battlesnake/pkg/types"
 )
 
 const snakeInfo = `{
@@ -80,7 +81,8 @@ func bestMove(b types.BoardState, you types.Snake, turn int) types.SnakeMove {
 			if !grid.IsValid(&g, nghbr) {
 				continue
 			}
-			g.Cells[nghbr] = grid.Cell{Content: grid.ContentTypeAvoid}
+			c := g.Cells[nghbr]
+			c.IsAvoid = true
 		}
 	}
 

@@ -1,12 +1,13 @@
 package grid
 
 import (
-	"battlesnake/pkg/types"
 	"container/heap"
+
+	"battlesnake/pkg/types"
 )
 
 func FindPath(g *Grid, from, to types.Point) (nextDir types.MoveDir, distance int) {
-	path := search(g, from, to)
+	path, dist := search(g, from, to)
 	if len(path) < 2 {
 		return types.MoveDirUnknown, 0
 	}
@@ -22,10 +23,10 @@ func FindPath(g *Grid, from, to types.Point) (nextDir types.MoveDir, distance in
 		nextDir = "left"
 	}
 
-	return nextDir, len(path) - 1
+	return nextDir, dist
 }
 
-func search(g *Grid, to, from types.Point) []types.Point {
+func search(g *Grid, to, from types.Point) ([]types.Point, int) {
 	nm := make(map[types.Point]*aStarNode)
 	nq := &priorityQueue{}
 	heap.Init(nq)
@@ -35,13 +36,24 @@ func search(g *Grid, to, from types.Point) []types.Point {
 	for {
 		if nq.Len() == 0 {
 			// There's no path, return found false.
-			return nil
+			return nil, 0
 		}
 		current := heap.Pop(nq).(*aStarNode)
 		current.open = false
 		current.closed = true
 
 		if current.p == getNode(nm, to).p {
+			current.cost += 1
+			v := g.Cells[current.p]
+
+			if v.IsHazard {
+				current.cost += 15
+			}
+
+			if v.IsAvoid {
+				current.cost += g.Height * g.Width
+			}
+
 			// Found a path.
 			n := current
 			var res []types.Point
@@ -49,7 +61,7 @@ func search(g *Grid, to, from types.Point) []types.Point {
 				res = append(res, n.p)
 				n = n.parent
 			}
-			return res
+			return res, current.cost
 		}
 
 		for _, nghbr := range []types.Point{
@@ -71,14 +83,19 @@ func search(g *Grid, to, from types.Point) []types.Point {
 			case ContentTypeFood:
 				cost += 2
 				break
-			case ContentTypeAvoid:
-				cost += float64(g.Height * g.Width)
-				break
 			default:
 				if nghbr == to {
 					break
 				}
 				continue
+			}
+
+			if v.IsHazard {
+				cost += 15
+			}
+
+			if v.IsAvoid {
+				cost += g.Height * g.Width
 			}
 
 			neighborNode := getNode(nm, nghbr)
@@ -102,8 +119,8 @@ func search(g *Grid, to, from types.Point) []types.Point {
 
 type aStarNode struct {
 	p        types.Point
-	cost     float64
-	priority float64
+	cost     int
+	priority int
 	parent   *aStarNode
 	open     bool
 	closed   bool

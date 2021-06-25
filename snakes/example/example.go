@@ -1,12 +1,13 @@
 package example
 
 import (
-	"battlesnake/pkg/types"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+
+	"battlesnake/pkg/types"
 )
 
 const snakeInfo = `{
@@ -54,7 +55,7 @@ func HandleMove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Choose a random direction to move in
-	possibleMoves := []string{"up", "down", "left", "right"}
+	possibleMoves := []types.MoveDir{"up", "down", "left", "right"}
 	move := possibleMoves[rand.Intn(len(possibleMoves))]
 
 	response := types.SnakeMove{
