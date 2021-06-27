@@ -19,7 +19,7 @@ func TestMove(t *testing.T) {
 	}{
 		{
 			requestFile: "case_1.json",
-			possible:    []types.MoveDir{"up", "down", "left", "right"},
+			possible:    []types.MoveDir{"up"},
 		},
 		{
 			requestFile: "case_2.json",
@@ -67,7 +67,7 @@ func TestMove(t *testing.T) {
 		},
 		{
 			requestFile: "case_13.json",
-			possible:    []types.MoveDir{"up"},
+			possible:    []types.MoveDir{"up", "down"},
 		},
 		{
 			requestFile: "case_14.json",
@@ -79,7 +79,7 @@ func TestMove(t *testing.T) {
 		},
 		{
 			requestFile: "input-1ba94b9b-abcf-42cf-adb0-8b109c5c60b3-turn-44.json",
-			possible:    []types.MoveDir{"up"},
+			possible:    []types.MoveDir{"up", "left"},
 		},
 		{
 			requestFile: "input-4bf799fe-98d5-4cda-a1f9-f3c7cae759eb-turn-92.json",

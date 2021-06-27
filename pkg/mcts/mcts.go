@@ -1,8 +1,13 @@
 package mcts
 
 import (
+	"battlesnake/pkg/grid"
+	"battlesnake/pkg/types"
 	"context"
+	"math/rand"
+	"runtime"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/0xhexnumbers/gmcts/v2"
@@ -16,11 +21,15 @@ func Search(ctx context.Context, s rules.BoardState, hazards []rules.Point, me s
 		return s.Snakes[i].ID == me
 	})
 
+	grid := grid.MakeFromRulesState(s, hazards)
 	gameState := &game{
-		rs:      inferRuleset(&s, hazards, turn),
-		state:   s,
-		me:      me,
-		players: make(map[string]gmcts.Player),
+		rs:             inferRuleset(&s, hazards, turn),
+		state:          s,
+		me:             me,
+		players:        make(map[string]gmcts.Player),
+		remainingTurns: 30,
+		grid:           &grid,
+		mu:             new(sync.Mutex),
 	}
 
 	for i, snake := range s.Snakes {
@@ -33,17 +42,26 @@ func Search(ctx context.Context, s rules.BoardState, hazards []rules.Point, me s
 
 	mcts := gmcts.NewMCTS(gameState)
 
-	tree := mcts.SpawnTree()
-	tree.SearchContext(ctx)
-
-	mcts.AddTree(tree)
+	var wait sync.WaitGroup
+	concurrentTrees := runtime.NumCPU()
+	concurrentTrees = 1
+	wait.Add(concurrentTrees)
+	for i := 0; i < concurrentTrees; i++ {
+		go func() {
+			tree := mcts.SpawnCustomTree(0.5)
+			tree.SearchContext(ctx)
+			mcts.AddTree(tree)
+			wait.Done()
+		}()
+	}
+	wait.Wait()
 
 	bestAction, err := mcts.BestAction()
 	if err != nil {
 		return "", err
 	}
 
-	return allDirections[bestAction], nil
+	return string(gameState.availableActions[bestAction]), nil
 }
 
 func inferRuleset(s *rules.BoardState, hazards []rules.Point, turn int32) rules.Ruleset {
@@ -63,6 +81,7 @@ func inferRuleset(s *rules.BoardState, hazards []rules.Point, turn int32) rules.
 			Turn:              turn,
 			ShrinkEveryNTurns: 10,
 			DamagePerTurn:     1,
+			OutOfBounds:       append([]rules.Point{}, hazards...),
 		}
 	}
 
@@ -70,24 +89,66 @@ func inferRuleset(s *rules.BoardState, hazards []rules.Point, turn int32) rules.
 }
 
 type game struct {
-	rs      rules.Ruleset
-	state   rules.BoardState
-	me      string
-	moves   []rules.SnakeMove
-	players map[string]gmcts.Player
+	rs               rules.Ruleset
+	state            rules.BoardState
+	grid             *grid.Grid
+	me               string
+	moves            []rules.SnakeMove
+	players          map[string]gmcts.Player
+	remainingTurns   int32
+	availableActions []types.MoveDir
+	mu               *sync.Mutex
 }
 
 func (g *game) Len() int {
-	return 4
+	g.ensureActions()
+	return len(g.availableActions)
+}
+
+func (g *game) ensureActions() {
+	if g.availableActions != nil {
+		return
+	}
+
+	snakeID := nextPlayer(g.moves)
+	if snakeID == "" {
+		return
+	}
+
+	var h types.Point
+	for _, snake := range g.state.Snakes {
+		if snake.ID != snakeID {
+			continue
+		}
+		h = types.Point{X: int(snake.Body[0].X), Y: int(snake.Body[0].Y)}
+		break
+	}
+
+	for _, nghbr := range []struct {
+		p   types.Point
+		dir types.MoveDir
+	}{
+		{p: types.Point{Y: h.Y, X: h.X - 1}, dir: types.MoveDirLeft},
+		{p: types.Point{Y: h.Y, X: h.X + 1}, dir: types.MoveDirRight},
+		{p: types.Point{Y: h.Y - 1, X: h.X}, dir: types.MoveDirDown},
+		{p: types.Point{Y: h.Y + 1, X: h.X}, dir: types.MoveDirUp},
+	} {
+		if grid.IsValid(g.grid, nghbr.p) {
+			g.mu.Lock()
+			g.availableActions = append(g.availableActions, nghbr.dir)
+			g.mu.Unlock()
+		}
+	}
 }
 
 func (g *game) ApplyAction(actionID int) (gmcts.Game, error) {
+	g.ensureActions()
 	moves := append([]rules.SnakeMove{}, g.moves...)
 	for i := range moves {
 		if moves[i].Move != "" {
 			continue
 		}
-		moves[i].Move = allDirections[actionID]
+		moves[i].Move = string(g.availableActions[actionID])
 		break
 	}
 
@@ -96,18 +157,32 @@ func (g *game) ApplyAction(actionID int) (gmcts.Game, error) {
 		state:   g.state,
 		me:      g.me,
 		players: g.players,
+		mu:      new(sync.Mutex),
 	}
 
 	if snakeID := nextPlayer(moves); snakeID != "" {
 		res.moves = moves
+		res.remainingTurns = g.remainingTurns
+		res.grid = g.grid
 		return &res, nil
 	}
 
+	g.mu.Lock()
 	state, err := g.rs.CreateNextBoardState(&g.state, moves)
+	g.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
 	res.state = *state
+	res.remainingTurns = g.remainingTurns - 1
+
+	var hazards []rules.Point
+	if rs, ok := g.rs.(*rules.RoyaleRuleset); ok {
+		hazards = append([]rules.Point{}, rs.OutOfBounds...)
+	}
+
+	grid := grid.MakeFromRulesState(*state, hazards)
+	res.grid = &grid
 	for _, snake := range state.Snakes {
 		if snake.EliminatedCause != "" {
 			continue
@@ -128,7 +203,7 @@ func nextPlayer(moves []rules.SnakeMove) string {
 }
 
 func (g *game) Hash() interface{} {
-	return g
+	return rand.Int63()
 }
 
 func (g *game) Player() gmcts.Player {
@@ -136,6 +211,14 @@ func (g *game) Player() gmcts.Player {
 }
 
 func (g *game) IsTerminal() bool {
+	if g.remainingTurns <= 0 {
+		return true
+	}
+
+	if g.Len() == 0 {
+		return true
+	}
+
 	over, err := g.rs.IsGameOver(&g.state)
 	if err != nil {
 		panic(err)
@@ -156,14 +239,19 @@ func (g *game) IsTerminal() bool {
 }
 
 func (g *game) Winners() []gmcts.Player {
-	var res []gmcts.Player
+	res := []gmcts.Player{gmcts.Player(len(g.state.Snakes))}
 	for _, snake := range g.state.Snakes {
 		if snake.EliminatedCause != "" {
 			continue
 		}
 
+		if snake.ID == nextPlayer(g.moves) && g.Len() == 0 {
+			continue
+		}
+
 		res = append(res, getPlayer(g.players, snake.ID))
 	}
+
 	return res
 }
 

@@ -1,11 +1,12 @@
 package grid
 
 import (
+	"battlesnake/pkg/types"
 	"bytes"
 	"fmt"
 	"sort"
 
-	"battlesnake/pkg/types"
+	"github.com/BattlesnakeOfficial/rules"
 )
 
 type Grid struct {
@@ -91,6 +92,46 @@ func Make(board types.BoardState) Grid {
 	return Grid{
 		Width:  board.Width,
 		Height: board.Height,
+		Cells:  cells,
+	}
+}
+
+func MakeFromRulesState(board rules.BoardState, hazards []rules.Point) Grid {
+	cells := make(map[types.Point]Cell)
+	for x := 0; x < int(board.Width); x++ {
+		for y := 0; y < int(board.Height); y++ {
+			cells[types.Point{X: x, Y: y}] = Cell{Content: ContentTypeEmpty}
+		}
+	}
+
+	for _, p := range hazards {
+		c := cells[types.Point{X: int(p.X), Y: int(p.Y)}]
+		c.IsHazard = true
+		cells[types.Point{X: int(p.X), Y: int(p.Y)}] = c
+	}
+
+	for _, p := range board.Food {
+		c := cells[types.Point{X: int(p.X), Y: int(p.Y)}]
+		c.Content = ContentTypeFood
+		cells[types.Point{X: int(p.X), Y: int(p.Y)}] = c
+	}
+
+	for _, snake := range board.Snakes {
+		if snake.EliminatedCause != "" {
+			continue
+		}
+		for i, p := range snake.Body {
+			c := cells[types.Point{X: int(p.X), Y: int(p.Y)}]
+			c.Content = ContentTypeSnake
+			c.TTL = len(snake.Body) - i
+			c.SnakeID = snake.ID
+			cells[types.Point{X: int(p.X), Y: int(p.Y)}] = c
+		}
+	}
+
+	return Grid{
+		Width:  int(board.Width),
+		Height: int(board.Height),
 		Cells:  cells,
 	}
 }
