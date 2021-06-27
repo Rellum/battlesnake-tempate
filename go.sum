@@ -11,8 +11,10 @@ cloud.google.com/go/firestore v1.1.0/go.mod h1:ulACoGHTpvq5r8rxGJ4ddJZBZqakUQqCl
 cloud.google.com/go/pubsub v1.0.1/go.mod h1:R0Gpsv3s54REJCy4fxDixWD93lHJMoZTyQ2kNxGRt3I=
 cloud.google.com/go/storage v1.0.0/go.mod h1:IhtSnM/ZTZV8YYJWCY8RULGVqBDmpoyjwiyrjsg+URw=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/BattlesnakeOfficial/rules v1.0.17 h1:+dfIxtp0Q8ifO1/MuTo6asER6hhi1J/iScNBrIvGLFY=
-github.com/BattlesnakeOfficial/rules v1.0.17/go.mod h1:V0FxuBl6wo0aVOnaDsw53ytWsUsXpNzaMO7gmAmokmg=
+github.com/0xhexnumbers/gmcts/v2 v2.0.0 h1:ibe6PnvtVWiZhiZ+FOZXZ8LskeofStY9uQBtydJBqtQ=
+github.com/0xhexnumbers/gmcts/v2 v2.0.0/go.mod h1:MafQ+DNCNZcZyrl+AH0JRy+2eLv0OiITFG9jQ8i4iJ4=
+github.com/0xhexnumbers/go-tic-tac-toe v0.2.2 h1:9DFLzGDqMRawLux5w2qDnAdjZkS+J5RSb+br/LqBlO0=
+github.com/0xhexnumbers/go-tic-tac-toe v0.2.2/go.mod h1:BYw9wIBW8reSdoXGVI0H1eQ2ZaZL3AMRbaOZNumyqqM=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=

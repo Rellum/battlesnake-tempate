@@ -3,6 +3,7 @@ module battlesnake
 go 1.16
 
 require (
+	github.com/0xhexnumbers/gmcts/v2 v2.0.0
 	github.com/BattlesnakeOfficial/rules v1.0.17
 	github.com/alcortesm/sample v1.0.4
 	github.com/mitchellh/copystructure v1.2.0

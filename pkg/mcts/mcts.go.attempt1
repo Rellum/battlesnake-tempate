@@ -1,0 +1,241 @@
+package mcts
+
+import (
+	"battlesnake/pkg/types"
+	"context"
+	"fmt"
+	"math"
+	"math/rand"
+
+	"github.com/BattlesnakeOfficial/rules"
+)
+
+func search(ctx context.Context, rs rules.Ruleset, s *rules.BoardState, me string) types.MoveDir {
+	v0 := node{state: s}
+
+	for {
+		if ctx.Err() != nil {
+			break
+		}
+
+		vl := treePolicy(&v0)
+
+		res := defaultPolicy(rs, vl.state, me)
+
+		backPropogate(vl, res)
+	}
+	return action(bestChild(&v0))
+}
+
+func action(n node) types.MoveDir {
+	return types.MoveDirUnknown // todo fix
+}
+
+func bestChild(n *node) node {
+	return n // todo fix
+}
+
+func UCB1(n *node) int {
+
+	for i, i2 := range collection {
+
+	}
+	for i := 0; i < count; i++ {
+		if arm[i].Count == 0 {
+			return i
+		}
+	}
+
+	x_mean := Sample_Mean(agent, arm, count)
+
+	//choose the best arm index
+	val := make([]float64, count)
+	s := 0
+	max := 0.0
+	for i := 0; i < count; i++ {
+		val[i] = x_mean[i] + math.Sqrt(math.Log(float64(agent.Trials))/(2*float64(arm[i].Count)))
+		if val[i] > max {
+			max = val[i]
+			s = i
+		}
+	}
+	return s
+}
+
+type node struct {
+	state *rules.BoardState
+
+	children map[rules.SnakeMove]*node
+
+	fullyExpanded   bool     // have all children been added
+	remainingSnakes []string // snakes which must move this turn
+	theEnd          bool     // I have died or won
+
+	count  int
+	scores map[string]int
+}
+
+func vectorKey(ml []rules.SnakeMove) string {
+	return fmt.Sprint(ml)
+}
+
+// selection
+
+func treePolicy(n *node) node {
+	var liveSnakeIDs []string
+	for _, snake := range n.state.Snakes {
+		if snake.EliminatedCause != "" {
+			continue
+		}
+		liveSnakeIDs = append(liveSnakeIDs, snake.ID)
+	}
+
+	for len(n.remainingSnakes) > 0 {
+		child := maybeAddChild(n)
+		if child != nil {
+			n = child
+			continue
+		}
+
+	}
+}
+
+// expansion
+
+func maybeAddChild(n *node) *node {
+	if n.fullyExpanded {
+		return nil
+	}
+
+	for _, move := range []string{"up", "down", "left", "right"} {
+		k := rules.SnakeMove{ID: n.remainingSnakes[0], Move: move}
+		if _, ok := n.children[k]; ok {
+			continue
+		}
+
+		res := node{
+			state:    nil,
+			children: make(map[rules.SnakeMove]*node),
+		}
+		n.children[k] = &res
+		return &res
+	}
+
+	n.fullyExpanded = true
+	return nil
+}
+
+func allMoves(snakeIDs []string, moves [][]rules.SnakeMove) [][]rules.SnakeMove {
+	if len(snakeIDs) == 0 {
+		return moves
+	}
+	var res [][]rules.SnakeMove
+	for _, dir := range []string{"up", "down", "left", "right"} {
+		if len(moves) < 4 {
+			res = append(res, []rules.SnakeMove{{ID: snakeIDs[0], Move: dir}})
+			continue
+		}
+		for i := range moves {
+			turn := []rules.SnakeMove{{ID: snakeIDs[0], Move: dir}}
+			for _, move := range moves[i] {
+				turn = append(turn, move)
+			}
+			res = append(res, turn)
+		}
+	}
+	return allMoves(snakeIDs[1:], res)
+}
+
+// playout
+
+func defaultPolicy(rs rules.Ruleset, state *rules.BoardState, me string) int {
+	s := *state
+	for {
+		for _, snake := range s.Snakes {
+			if snake.ID == me {
+				if snake.EliminatedCause != "" {
+					return -1
+				}
+				break
+			}
+		}
+
+		over, err := rs.IsGameOver(&s)
+		if err != nil {
+			panic(err)
+		}
+
+		if over {
+			return 1
+		}
+
+		var ml []rules.SnakeMove
+		for _, snake := range s.Snakes {
+			ml = append(ml, rules.SnakeMove{
+				ID:   snake.ID,
+				Move: allDirections[rand.Intn(len(allDirections))],
+			})
+		}
+
+		ns, err := rs.CreateNextBoardState(&s, ml)
+		if err != nil {
+			panic(err)
+		}
+		s = *ns
+	}
+}
+
+var allDirections = []string{"up", "down", "left", "right"}
+
+func makeGrid(board rules.BoardState) grid {
+	//cells := make(map[rules.Point]cell)
+	//
+	//for _, p := range board.Hazards {
+	//	c := cells[p]
+	//	c.IsHazard = true
+	//	cells[p] = c
+	//}
+	//
+	//for _, p := range board.Food {
+	//	c := cells[p]
+	//	c.Content = ContentTypeFood
+	//	cells[p] = c
+	//}
+	//
+	//for _, snake := range board.Snakes {
+	//	if snake.EliminatedCause != "" {
+	//		continue
+	//	}
+	//	for i, p := range snake.Body {
+	//		c := cells[p]
+	//		c.Content = ContentTypeSnake
+	//		c.TTL = len(snake.Body) - i
+	//		c.SnakeID = snake.ID
+	//		cells[p] = c
+	//	}
+	//}
+	//
+	//return Grid{
+	//	Width:  board.Width,
+	//	Height: board.Height,
+	//	Cells:  cells,
+	//}
+	return grid{}
+}
+
+type grid struct {
+	w, h  int32
+	cells []cell
+}
+
+type cell struct {
+	IsFood   bool
+	IsHazard bool
+	SnakeID  string
+}
+
+// backpropogation
+
+func backPropogate(n node, res int) {
+	return // todo fix
+}
