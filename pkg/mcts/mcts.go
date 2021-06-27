@@ -44,6 +44,7 @@ func Search(ctx context.Context, s rules.BoardState, hazards []rules.Point, me s
 
 	var wait sync.WaitGroup
 	concurrentTrees := runtime.NumCPU()
+	concurrentTrees = 1
 	wait.Add(concurrentTrees)
 	for i := 0; i < concurrentTrees; i++ {
 		go func() {
@@ -100,6 +101,12 @@ type game struct {
 }
 
 func (g *game) Len() int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.len()
+}
+
+func (g *game) len() int {
 	g.ensureActions()
 	return len(g.availableActions)
 }
@@ -133,14 +140,14 @@ func (g *game) ensureActions() {
 		{p: types.Point{Y: h.Y + 1, X: h.X}, dir: types.MoveDirUp},
 	} {
 		if grid.IsValid(g.grid, nghbr.p) {
-			g.mu.Lock()
 			g.availableActions = append(g.availableActions, nghbr.dir)
-			g.mu.Unlock()
 		}
 	}
 }
 
 func (g *game) ApplyAction(actionID int) (gmcts.Game, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	g.ensureActions()
 	moves := append([]rules.SnakeMove{}, g.moves...)
 	for i := range moves {
@@ -166,9 +173,7 @@ func (g *game) ApplyAction(actionID int) (gmcts.Game, error) {
 		return &res, nil
 	}
 
-	g.mu.Lock()
 	state, err := g.rs.CreateNextBoardState(&g.state, moves)
-	g.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
@@ -206,15 +211,19 @@ func (g *game) Hash() interface{} {
 }
 
 func (g *game) Player() gmcts.Player {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	return getPlayer(g.players, nextPlayer(g.moves))
 }
 
 func (g *game) IsTerminal() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	if g.remainingTurns <= 0 {
 		return true
 	}
 
-	if g.Len() == 0 {
+	if g.len() == 0 {
 		return true
 	}
 
@@ -238,13 +247,15 @@ func (g *game) IsTerminal() bool {
 }
 
 func (g *game) Winners() []gmcts.Player {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	res := []gmcts.Player{gmcts.Player(len(g.state.Snakes))}
 	for _, snake := range g.state.Snakes {
 		if snake.EliminatedCause != "" {
 			continue
 		}
 
-		if snake.ID == nextPlayer(g.moves) && g.Len() == 0 {
+		if snake.ID == nextPlayer(g.moves) && g.len() == 0 {
 			continue
 		}
 
