@@ -27,7 +27,7 @@ func Search(ctx context.Context, s rules.BoardState, hazards []rules.Point, me s
 		state:          s,
 		me:             me,
 		players:        make(map[string]gmcts.Player),
-		remainingTurns: 30,
+		remainingTurns: 60,
 		grid:           &grid,
 		mu:             new(sync.Mutex),
 	}
