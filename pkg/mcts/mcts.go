@@ -44,11 +44,10 @@ func Search(ctx context.Context, s rules.BoardState, hazards []rules.Point, me s
 
 	var wait sync.WaitGroup
 	concurrentTrees := runtime.NumCPU()
-	concurrentTrees = 1
 	wait.Add(concurrentTrees)
 	for i := 0; i < concurrentTrees; i++ {
 		go func() {
-			tree := mcts.SpawnCustomTree(0.5)
+			tree := mcts.SpawnTree()
 			tree.SearchContext(ctx)
 			mcts.AddTree(tree)
 			wait.Done()

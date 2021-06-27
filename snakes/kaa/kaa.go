@@ -1,6 +1,8 @@
 package kaa
 
 import (
+	"battlesnake/pkg/mcts"
+	"battlesnake/pkg/types"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,18 +11,15 @@ import (
 	"time"
 
 	"github.com/BattlesnakeOfficial/rules"
-
-	"battlesnake/pkg/mcts"
-	"battlesnake/pkg/types"
 )
 
 const snakeInfo = `{
   "apiversion": "1",
   "author": "dogzbody",
-  "color" : "#eab676",
+  "color" : "#FF69B4",
   "head" : "viper",
   "tail" : "rattle",
-  "version" : "0.0.2-beta"
+  "version" : "0.0.3-beta"
 }`
 
 func HandleIndex(w http.ResponseWriter, r *http.Request) {
