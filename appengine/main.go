@@ -130,7 +130,7 @@ func HandleEnd(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	port := os.Getenv("PORT")
-	if len(port) == 0 {
+	if port == "" {
 		port = "8080"
 	}
 
